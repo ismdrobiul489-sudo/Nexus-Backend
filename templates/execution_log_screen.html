@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Execution Logs | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#101622',
+                            card: '#1C1E21',
+                            border: '#3b4354'
+                        },
+                        primary: '#1877F2'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-50 dark:bg-[#101622] text-gray-900 dark:text-white h-screen flex flex-col font-['Inter'] overflow-hidden">
+
+    <!-- Header -->
+    <header
+        class="bg-white dark:bg-[#1C1E21] px-4 py-4 shadow-md border-b border-gray-100 dark:border-[#3b4354] sticky top-0 z-40">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/automation_screen"
+                    class="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <i data-lucide="arrow-left" class="w-6 h-6 text-gray-500"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-bold leading-none">Execution Logs</h1>
+                    <p class="text-[10px] text-gray-500 mt-1 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        Live Updates
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="fetchLogs()" id="refresh-btn"
+                class="p-2 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-[#3b4354] hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-blue-500">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-32 scrollbar-hide">
+        <!-- Info Banner -->
+        <div class="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex gap-4 items-start">
+            <i data-lucide="clock" class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"></i>
+            <p class="text-xs text-blue-500/80 leading-relaxed font-medium">
+                This screen updates automatically. Jobs scheduled during Quiet Hours will appear as <span
+                    class="font-bold text-orange-500">DELAYED</span>.
+            </p>
+        </div>
+
+        <!-- Log List -->
+        <div id="log-list" class="space-y-3">
+            <!-- Shimmer effect -->
+            <div class="space-y-3 animate-pulse">
+                <div class="h-32 bg-gray-200 dark:bg-gray-800 rounded-3xl"></div>
+                <div class="h-32 bg-gray-200 dark:bg-gray-800 rounded-3xl"></div>
+                <div class="h-32 bg-gray-200 dark:bg-gray-800 rounded-3xl"></div>
+            </div>
+        </div>
+
+        <div id="end-of-history" class="hidden text-center py-8">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">End of History</p>
+        </div>
+    </main>
+
+    <script>
+        async function fetchLogs() {
+            const btn = document.getElementById('refresh-btn');
+            btn.classList.add('animate-spin');
+
+            try {
+                const res = await fetch('/api/stats'); // We can use stats or a specialized endpoint
+                // Actually we need a full jobs list. Let's assume /api/jobs exists or we use stats for now
+                // For 1:1 parity, we'll fetch from /api/stats and assume it returns job history or similar
+                // BUT, better to fetch actual logs if the API supports it.
+
+                // Mocking data for now based on React structure until API is verified
+                const container = document.getElementById('log-list');
+                const mockJobs = [
+                    { id: 1, flow: 'Daily Tech News', time: '10:45 AM', status: 'SUCCESS', platform: 'Facebook', reason: 'Successfully posted Link to Page.' },
+                    { id: 2, flow: 'AI Content Gen', time: '10:40 AM', status: 'SUCCESS', platform: 'Gemini', reason: 'Generated 350 words of content.' },
+                    { id: 3, flow: 'RSS Sync', time: '10:30 AM', status: 'SKIPPED', platform: 'Scheduler', reason: 'No new articles found since last check.' },
+                    { id: 4, flow: 'Night Loop', time: '02:00 AM', status: 'DELAYED', platform: 'Scheduler', reason: 'Paused due to Quiet Hours (00:00 - 08:00)' }
+                ];
+
+                container.innerHTML = mockJobs.map(job => `
+                    <div class="bg-white dark:bg-[#1C1E21] border border-gray-100 dark:border-[#3b4354] rounded-3xl p-5 shadow-sm space-y-4 animate-fade-in">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-sm select-none">${job.flow}</h3>
+                                <div class="flex items-center gap-1.5 mt-1 text-[10px] font-mono text-gray-500">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                                    <span>Today, ${job.time}</span>
+                                </div>
+                            </div>
+                            <div class="px-3 py-1.5 rounded-xl border text-[10px] font-bold tracking-widest ${getStatusStyle(job.status)} flex items-center gap-1.5">
+                                <i data-lucide="${getStatusIcon(job.status)}" class="w-3 h-3"></i>
+                                ${job.status}
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-900 border border-transparent dark:border-[#3b4354] rounded-2xl p-3">
+                            <p class="text-[11px] text-gray-600 dark:text-gray-300 font-medium leading-relaxed">${job.reason}</p>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <div class="flex items-center gap-2">
+                                <div class="px-2 py-0.5 bg-purple-500/10 text-purple-500 text-[10px] font-bold uppercase tracking-widest rounded-md flex items-center gap-1">
+                                    <i data-lucide="brain" class="w-3 h-3"></i>
+                                    Flash 1.5
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                                <i data-lucide="${getPlatformIcon(job.platform)}" class="w-3 h-3"></i>
+                                ${job.platform}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('end-of-history').classList.remove('hidden');
+                lucide.createIcons();
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setTimeout(() => btn.classList.remove('animate-spin'), 600);
+            }
+        }
+
+        function getStatusStyle(status) {
+            switch (status) {
+                case 'SUCCESS': return 'bg-green-500/10 border-green-500/20 text-green-500';
+                case 'FAILED': return 'bg-red-500/10 border-red-500/20 text-red-500';
+                case 'DELAYED': return 'bg-orange-500/10 border-orange-500/20 text-orange-500';
+                case 'SKIPPED': return 'bg-gray-500/10 border-gray-500/20 text-gray-500';
+                default: return 'bg-gray-500/10 border-gray-500/20 text-gray-500';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'SUCCESS': return 'check-circle';
+                case 'FAILED': return 'x-circle';
+                case 'DELAYED': return 'clock';
+                case 'SKIPPED': return 'alert-triangle';
+                default: return 'help-circle';
+            }
+        }
+
+        function getPlatformIcon(platform) {
+            switch (platform) {
+                case 'Facebook': return 'facebook';
+                case 'Gemini': return 'sparkles';
+                case 'Scheduler': return 'server';
+                default: return 'activity';
+            }
+        }
+
+        window.onload = fetchLogs;
+    </script>
+</body>
+
+</html>

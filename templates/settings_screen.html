@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Settings - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .subview-active #main-header {
+            display: none;
+        }
+
+        .transition-all {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass {
+            background: rgba(28, 30, 33, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-['Inter'] min-h-screen pb-24 transition-colors">
+
+    <!-- Header (Main) -->
+    <header id="main-header"
+        class="sticky top-0 z-40 bg-[#1C1E21]/80 backdrop-blur-md border-b border-[#3b4354] px-4 py-4 flex items-center gap-4">
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-4">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button id="back-button" onclick="hideSubView()"
+                    class="hidden p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <h1 id="subview-title" class="text-xl font-extrabold tracking-tight text-slate-900">Settings</h1>
+            </div>
+            <div id="subview-actions"></div>
+        </div>
+    </header>
+
+    <!-- MAIN SETTINGS VIEW -->
+    <main id="settings-main" class="p-0 animate-fade-in">
+        <!-- Configuration Groups -->
+        <div class="space-y-px container mx-auto">
+            <div onclick="showSubView('ai_config')"
+                class="flex items-center justify-between p-5 bg-white hover:bg-slate-50 cursor-pointer border-b border-slate-100 active:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 transition-transform group-hover:scale-110">
+                        <i data-lucide="cpu" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-900">AI Brains</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                            OpenRouter</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-slate-300"></i>
+            </div>
+
+            <div onclick="showSubView('img_config')"
+                class="flex items-center justify-between p-5 bg-white hover:bg-slate-50 cursor-pointer border-b border-slate-100 active:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 transition-transform group-hover:scale-110">
+                        <i data-lucide="image" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-900">Visual Engine</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                            Flux</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-slate-300"></i>
+            </div>
+
+            <div onclick="showSubView('social_config')"
+                class="flex items-center justify-between p-5 bg-white hover:bg-slate-50 cursor-pointer border-b border-slate-100 active:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 transition-transform group-hover:scale-110">
+                        <i data-lucide="share-2" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-900">Social Bridge</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                            X</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-slate-300"></i>
+            </div>
+
+            <div onclick="showSubView('nca_config')"
+                class="flex items-center justify-between p-5 bg-white hover:bg-slate-50 cursor-pointer border-b border-slate-100 active:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 transition-transform group-hover:scale-110">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-900">Nexus Guard</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">NCA Auth</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-slate-300"></i>
+            </div>
+
+            <div onclick="showSubView('yt_bridge')"
+                class="flex items-center justify-between p-5 bg-white hover:bg-slate-50 cursor-pointer border-b border-slate-100 active:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-red-600 transition-transform group-hover:scale-110">
+                        <i data-lucide="youtube" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-900">Video Pipeline</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">YouTube</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-slate-300"></i>
+            </div>
+
+            <div onclick="showSubView('time_config')"
+                class="flex items-center justify-between p-5 bg-white hover:bg-slate-50 cursor-pointer border-b border-slate-100 active:bg-slate-100 transition-colors group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 transition-transform group-hover:scale-110">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-slate-900">Time Sync</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">UTC</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="text-slate-300"></i>
+            </div>
+        </div>
+
+        <!-- System Settings -->
+        <div class="mt-8 px-4 pb-4 container mx-auto">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 ml-1">Engagement & Experience
+            </h2>
+
+            <div
+                class="bg-white rounded-3xl border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
+                <!-- Theme Toggle -->
+                <div class="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="text-indigo-500 bg-indigo-50 w-10 h-10 rounded-xl flex items-center justify-center">
+                            <i data-lucide="moon"></i>
+                        </div>
+                        <div>
+                            <span class="block font-extrabold text-slate-900">Dark Mode</span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Toggle
+                                Appearance</span>
+                        </div>
+                    </div>
+                    <div id="theme-toggle" onclick="toggleTheme()"
+                        class="w-11 h-6 rounded-full p-1 transition-colors relative cursor-pointer bg-slate-200">
+                        <div class="bg-white w-4 h-4 rounded-full shadow-sm transition-transform"></div>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="text-blue-500 bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center">
+                            <i data-lucide="bell"></i>
+                        </div>
+                        <div>
+                            <span class="block font-extrabold text-slate-900">Push Notifications</span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">On
+                                Devices</span>
+                        </div>
+                    </div>
+                    <div id="notif-toggle" onclick="toggleNotif()"
+                        class="w-11 h-6 rounded-full p-1 transition-colors relative cursor-pointer bg-blue-600">
+                        <div class="bg-white w-4 h-4 rounded-full shadow-sm transition-transform translate-x-5"></div>
+                    </div>
+                </div>
+
+                <!-- Background Toggle -->
+                <span class="text-[10px] text-green-500 font-bold uppercase">Always On (Immortal
+                    Mode)</span>
+            </div>
+        </div>
+        <div onclick="toggleSetting('enable_background_worker')" id="toggle-worker"
+            class="w-12 h-6 rounded-full p-1 cursor-pointer transition-colors bg-[#2A2A2A]">
+            <div class="bg-white w-4 h-4 rounded-full shadow-sm transition-transform"></div>
+        </div>
+        </div>
+
+        <!-- Dedicated Mode -->
+        <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="text-purple-500"><i data-lucide="monitor"></i></div>
+                <div>
+                    <span class="block font-bold text-sm">Keep Server Awake</span>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Prevents process
+                        hibernation</span>
+                </div>
+            </div>
+            <div onclick="toggleSetting('dedicated_server_mode')" id="toggle-dedicated"
+                class="w-12 h-6 rounded-full p-1 cursor-pointer transition-colors bg-[#2A2A2A]">
+                <div class="bg-white w-4 h-4 rounded-full shadow-sm transition-transform"></div>
+            </div>
+        </div>
+
+        <!-- Voice Alerts -->
+        <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="text-green-500"><i data-lucide="mic"></i></div>
+                <div>
+                    <span class="block font-bold text-sm">Status Beeps</span>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Periodic audio heartbeat</span>
+                </div>
+            </div>
+            <div onclick="toggleSetting('voice_alerts')" id="toggle-voice"
+                class="w-12 h-6 rounded-full p-1 cursor-pointer transition-colors bg-[#2A2A2A]">
+                <div class="bg-white w-4 h-4 rounded-full shadow-sm transition-transform"></div>
+            </div>
+        </div>
+        </div>
+        </div>
+
+        <!-- Monitoring -->
+        <div class="mt-4 px-4 pb-4">
+            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 ml-1">System Monitoring</h2>
+            <div class="bg-[#1C1E21] rounded-2xl border border-[#3b4354] overflow-hidden divide-y divide-[#3b4354]">
+                <a href="/logs_screen"
+                    class="p-4 flex items-center justify-between hover:bg-[#2A2A2A] transition-colors group">
+                    <div class="flex items-center gap-4">
+                        <div class="text-green-500 group-hover:scale-110 transition-transform"><i
+                                data-lucide="terminal"></i></div>
+                        <div>
+                            <span class="block font-bold text-sm">System Console</span>
+                            <span class="text-[10px] text-gray-500 font-bold uppercase">Live backend events &
+                                errors</span>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-gray-600"></i>
+                </a>
+                <a href="/execution_logs_screen"
+                    class="p-4 flex items-center justify-between hover:bg-[#2A2A2A] transition-colors group">
+                    <div class="flex items-center gap-4">
+                        <div class="text-blue-500 group-hover:scale-110 transition-transform"><i
+                                data-lucide="activity"></i></div>
+                        <div>
+                            <span class="block font-bold text-sm">Automation Logs</span>
+                            <span class="text-[10px] text-gray-500 font-bold uppercase">Flow execution history</span>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-gray-600"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-4 px-4 space-y-3">
+            <button onclick="handleExport()"
+                class="w-full flex items-center justify-center gap-2 p-3.5 bg-[#1C1E21] border border-[#3b4354] rounded-xl font-bold text-sm active:scale-95 transition-transform hover:border-blue-500/50">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Backup Data (Encrypted)</span>
+            </button>
+            <button onclick="document.getElementById('backup-file-input').click()"
+                class="w-full flex items-center justify-center gap-2 p-3.5 bg-[#1C1E21] border border-[#3b4354] rounded-xl font-bold text-sm active:scale-95 transition-transform hover:border-blue-500/50">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>Restore Backup</span>
+            </button>
+            <input type="file" id="backup-file-input" style="display: none;" accept=".securebackup,.json"
+                onchange="handleRestore(event)">
+        </div>
+    </main>
+
+    <!-- SUB-VIEWS -->
+
+    <!-- AI CONFIG SUBVIEW -->
+    <div id="view-ai_config"
+        class="hidden fixed inset-0 z-50 bg-slate-50 pt-20 overflow-y-auto px-4 pb-24 animate-fade-in">
+        <div id="ai-list" class="space-y-3 container mx-auto max-w-2xl">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- IMAGE CONFIG SUBVIEW -->
+    <div id="view-img_config"
+        class="hidden fixed inset-0 z-50 bg-slate-50 pt-20 overflow-y-auto px-4 pb-24 animate-fade-in">
+        <div id="img-list" class="space-y-3 container mx-auto max-w-2xl">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- NCA CONFIG SUBVIEW -->
+    <div id="view-nca_config"
+        class="hidden fixed inset-0 z-50 bg-slate-50 pt-20 overflow-y-auto px-4 pb-24 animate-fade-in">
+        <div class="container mx-auto max-w-2xl">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 space-y-8 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="video" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-900 text-lg">NCA API Configuration</h3>
+                        <p class="text-xs text-slate-400 font-medium">Neural Content Automation Toolkit</p>
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">API Endpoint
+                            URL</label>
+                        <input type="text" id="nca-url" placeholder="https://your-nca-api.com"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all text-slate-900 shadow-sm">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Hugging Face
+                            Token</label>
+                        <input type="password" id="nca-hf-token" placeholder="hf_..."
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all text-slate-900 shadow-sm">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Hugging Face
+                            Repo</label>
+                        <input type="text" id="nca-hf-repo" placeholder="username/repo"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all text-slate-900 shadow-sm">
+                    </div>
+                </div>
+
+                <button onclick="verifyAndSaveNca()" id="btn-nca-save"
+                    class="w-full bg-pink-600 hover:bg-pink-700 py-4 rounded-xl font-bold text-white text-sm active:scale-95 transition-all shadow-lg shadow-pink-500/20">
+                    Verify & Save
+                </button>
+                <div id="nca-verify-status" class="hidden p-4 rounded-xl text-xs font-bold text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOCIAL CONFIG SUBVIEW -->
+    <div id="view-social_config"
+        class="hidden fixed inset-0 z-50 bg-slate-50 pt-20 overflow-y-auto px-4 pb-24 animate-fade-in">
+        <div class="container mx-auto max-w-2xl">
+            <div id="social-empty-state"
+                class="hidden flex flex-col items-center justify-center h-64 text-center opacity-60">
+                <div class="bg-slate-200 p-5 rounded-full mb-4 text-slate-400">
+                    <i data-lucide="globe" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-900">No Accounts Connected</h3>
+                <p class="text-sm text-slate-500 mt-2 max-w-[200px]">Tap the link button to add your first social media
+                    account.</p>
+            </div>
+            <div id="social-list" class="space-y-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TIME CONFIG SUBVIEW -->
+    <div id="view-time_config"
+        class="hidden fixed inset-0 z-50 bg-slate-50 pt-20 overflow-y-auto px-4 pb-24 animate-fade-in">
+        <div class="container mx-auto max-w-lg space-y-6">
+            <!-- Header-integrated Local Button (Visible when in subview) -->
+            <div class="flex justify-end mb-4">
+                <button onclick="useLocalTimeZone()"
+                    class="bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 border border-slate-200 transition-all active:scale-95 shadow-sm">
+                    <i data-lucide="monitor" class="w-4 h-4 text-blue-500"></i> Use Local Time
+                </button>
+            </div>
+
+            <!-- Live Clock Display -->
+            <div
+                class="bg-white rounded-3xl p-10 shadow-sm border border-slate-200 relative overflow-hidden text-center">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                <div
+                    class="text-slate-400 font-bold text-xs mb-3 flex items-center justify-center gap-2 uppercase tracking-widest">
+                    <i data-lucide="globe" class="w-4 h-4 text-blue-500"></i> Current Time in <span
+                        id="tz-display-name">UTC</span>
+                </div>
+                <div id="live-clock"
+                    class="text-4xl sm:text-5xl font-mono font-bold text-slate-900 tracking-wider mb-2">
+                    --:--:--
+                </div>
+                <div id="live-date" class="text-blue-600 font-bold text-xs uppercase tracking-widest">
+                    -- --- ----
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Select
+                        Time Zone</label>
+                    <div class="relative">
+                        <select id="time-zone-select" onchange="updateLiveClockDisplay()"
+                            class="w-full bg-white border border-slate-200 text-slate-900 text-base rounded-2xl p-4 pr-12 outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 appearance-none shadow-sm cursor-pointer transition-all">
+                            <!-- Populated by JS -->
+                        </select>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-5 rounded-3xl border border-blue-100 flex gap-4">
+                    <div class="mt-1">
+                        <i data-lucide="info" class="text-blue-500 w-5 h-5 shrink-0"></i>
+                    </div>
+                    <div class="text-xs text-blue-700/80 font-medium leading-relaxed">
+                        <span class="font-extrabold text-blue-600">Note:</span> This setting determines the base time
+                        zone
+                        for <span class="text-blue-600 font-bold uppercase">all</span> scheduled tasks and quiet hours
+                        across the
+                        application.
+                    </div>
+                </div>
+
+                <button onclick="saveTimeZone()"
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/10 hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-5 h-5"></i> Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- YOUTUBE BRIDGE SUBVIEW -->
+    <div id="view-yt_bridge"
+        class="hidden fixed inset-0 z-50 bg-slate-50 pt-20 overflow-y-auto px-4 pb-24 animate-fade-in">
+        <div class="container mx-auto max-w-2xl">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 space-y-8 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="cloud" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-900 text-lg">YouTube Server Bridge</h3>
+                        <p class="text-xs text-slate-400 font-medium">Global Upload & OAuth Handler</p>
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Redirect URL
+                            (Backend)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="yt-redirect-uri" readonly
+                                class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-xs text-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 shadow-inner">
+                            <button onclick="copyToClipboard('yt-redirect-uri')"
+                                class="p-4 bg-white border border-slate-200 rounded-xl text-slate-400 hover:bg-slate-50 transition-colors">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <p class="text-[9px] text-slate-400 px-1 font-medium italic">Ensure this matches your Google
+                            Cloud Console credentials.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Client
+                                ID</label>
+                            <input type="text" id="yt-client-id" placeholder="your-client-id.apps.googleusercontent.com"
+                                class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-slate-900 shadow-sm">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Client
+                                Secret</label>
+                            <input type="password" id="yt-client-secret" placeholder="GOCSPX-..."
+                                class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-slate-900 shadow-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="yt-connection-status"
+                    class="hidden p-4 rounded-2xl text-sm font-bold flex items-center justify-between">
+                    <!-- Status content -->
+                </div>
+
+                <div class="flex flex-col gap-4 pt-2">
+                    <button onclick="handleYoutubeConnect()" id="btn-yt-connect"
+                        class="w-full bg-red-600 hover:bg-red-700 py-4 rounded-xl font-bold text-white text-sm active:scale-95 transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2">
+                        <i data-lucide="log-in" class="w-5 h-5"></i> Connect with Google
+                    </button>
+                    <div class="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest">
+                        If connected, this will refresh the current session.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-gray-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+        if (document.readyState !== 'loading') highlightActiveTab();
+    </script>
+
+    <!-- MODALS -->
+
+    <!-- AI Config Modal -->
+    <div id="ai-modal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div class="bg-white w-full max-w-sm rounded-3xl border border-slate-200 p-8 space-y-6 shadow-2xl">
+            <h3 class="text-xl font-extrabold text-slate-900" id="ai-modal-title">AI Configuration</h3>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Label</label>
+                <input type="text" id="ai-name" placeholder="e.g. My Gemini"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900">
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Provider</label>
+                <select id="ai-provider"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900">
+                    <option value="Gemini">Gemini</option>
+                    <option value="OpenRouter">OpenRouter</option>
+                    <option value="Groq">Groq</option>
+                    <option value="Nvidia">Nvidia AI</option>
+                </select>
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">API Key</label>
+                <div class="flex gap-2">
+                    <input type="password" id="ai-key" placeholder="••••••••••••"
+                        class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900">
+                    <button onclick="verifyAiKey()" id="btn-ai-verify"
+                        class="px-4 bg-slate-50 border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="ai-verify-status" class="hidden p-3 rounded-xl text-[10px] font-bold text-center"></div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Model Name</label>
+                <select id="ai-model-select"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900">
+                    <option value="">Verify Key to Load Models</option>
+                </select>
+                <input type="text" id="ai-model-custom" placeholder="Or enter custom model..."
+                    class="hidden w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900">
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeAiModal()"
+                    class="flex-1 py-3 border border-[#3b4354] rounded-xl font-bold text-sm text-gray-400 hover:bg-[#2A2A2A] transition-all">Cancel</button>
+                <button onclick="saveAiConfig()"
+                    class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-all">Save
+                    Brain</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMG Config Modal -->
+    <div id="img-modal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div class="bg-white w-full max-w-sm rounded-3xl border border-slate-200 p-8 space-y-6 shadow-2xl">
+            <h3 class="text-xl font-extrabold text-slate-900" id="img-modal-title">Image Worker</h3>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Label</label>
+                <input type="text" id="img-name" placeholder="e.g. Flux Worker"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-slate-900">
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Worker URL</label>
+                <input type="text" id="img-url" placeholder="https://..."
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-slate-900">
+            </div>
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Access
+                        Key</label>
+                    <input type="password" id="img-key" placeholder="••••••••••••"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-slate-900">
+                </div>
+                <div id="img-verify-status" class="hidden p-3 rounded-xl text-[10px] font-bold text-center"></div>
+                <button id="btn-img-verify" onclick="verifyImgKey()"
+                    class="w-full py-3 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    Verify & Sync
+                </button>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeImgModal()"
+                    class="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-sm text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                <button onclick="saveImgConfig()"
+                    class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold text-white text-sm shadow-lg shadow-purple-500/20 active:scale-95 transition-all">Save
+                    Worker</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Add Modal -->
+    <div id="social-modal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div
+            class="bg-white w-full max-w-sm rounded-3xl border border-slate-200 p-8 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 class="text-xl font-extrabold text-slate-900">Add Social Account</h3>
+            <!-- Platform Indicator -->
+            <div id="social-modal-platform-header" class="hidden flex items-center gap-2 mb-2">
+                <button onclick="setSocialModalStep('PLATFORM')"
+                    class="text-xs text-blue-600 hover:underline font-bold uppercase tracking-widest">Change</button>
+                <span class="text-slate-200">|</span>
+                <div id="social-selected-platform-display"
+                    class="flex items-center gap-2 text-slate-500 font-extrabold text-xs uppercase tracking-widest">
+                    <!-- Icon + Name -->
+                </div>
+            </div>
+
+            <div id="social-modal-step-platform" class="grid grid-cols-2 gap-4">
+                <button onclick="selectSocialPlatform('FACEBOOK')"
+                    class="flex flex-col items-center justify-center gap-4 p-6 rounded-3xl border border-slate-100 hover:bg-blue-50 hover:border-blue-200 transition-all group shadow-sm bg-white">
+                    <div class="text-blue-600 group-hover:scale-110 transition-transform"><i data-lucide="facebook"
+                            class="w-10 h-10"></i></div>
+                    <span class="font-bold text-sm text-slate-900">Facebook</span>
+                </button>
+                <button onclick="selectSocialPlatform('YOUTUBE')"
+                    class="flex flex-col items-center justify-center gap-4 p-6 rounded-3xl border border-slate-100 hover:bg-red-50 hover:border-red-200 transition-all group shadow-sm bg-white">
+                    <div class="text-red-600 group-hover:scale-110 transition-transform"><i data-lucide="youtube"
+                            class="w-10 h-10"></i></div>
+                    <span class="font-bold text-sm text-slate-900">YouTube</span>
+                </button>
+                <button onclick="selectSocialPlatform('X')"
+                    class="flex flex-col items-center justify-center gap-4 p-6 rounded-3xl border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group text-slate-900 shadow-sm bg-white">
+                    <div class="text-slate-900 group-hover:scale-110 transition-transform"><i data-lucide="twitter"
+                            class="w-10 h-10"></i></div>
+                    <span class="font-bold text-sm">X / Twitter</span>
+                </button>
+                <button onclick="selectSocialPlatform('DAILYMOTION')"
+                    class="flex flex-col items-center justify-center gap-4 p-6 rounded-3xl border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group shadow-sm bg-white">
+                    <div class="font-black text-2xl group-hover:scale-110 transition-transform text-slate-900">dm</div>
+                    <span class="font-bold text-sm text-slate-900">Dailymotion</span>
+                </button>
+            </div>
+
+            <div id="social-modal-step-details" class="hidden space-y-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account
+                        Label</label>
+                    <input type="text" id="social-name" placeholder="e.g. My Official Page"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-inner">
+                </div>
+
+                <!-- Platform Specific Containers -->
+                <div id="social-fields-fb" class="hidden space-y-5">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Page
+                            ID</label>
+                        <input type="text" id="social-fb-page-id" placeholder="1029485..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono text-slate-900 shadow-inner">
+                    </div>
+                </div>
+
+                <div id="social-fields-yt" class="hidden space-y-5">
+                    <div class="p-5 bg-red-50 border border-red-100 rounded-2xl space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-red-400 uppercase tracking-widest">Client
+                                ID</label>
+                            <input type="text" id="social-yt-client-id"
+                                class="w-full bg-white border border-red-200 rounded-xl p-3 text-xs text-slate-900 shadow-inner">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-red-400 uppercase tracking-widest">Client
+                                Secret</label>
+                            <input type="password" id="social-yt-client-secret"
+                                class="w-full bg-white border border-red-200 rounded-xl p-3 text-xs text-slate-900 shadow-inner">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="social-fields-x"
+                    class="hidden space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner">
+                    <input type="text" id="social-x-handle" placeholder="@handle"
+                        class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900">
+                    <input type="text" id="social-x-api-key" placeholder="API Key"
+                        class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-900">
+                    <input type="password" id="social-x-api-secret" placeholder="API Secret"
+                        class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-900">
+                    <input type="text" id="social-x-access-token" placeholder="Access Token"
+                        class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-900">
+                    <input type="password" id="social-x-token-secret" placeholder="Token Secret"
+                        class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-900">
+                </div>
+
+                <div id="social-fields-dm"
+                    class="hidden space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Client ID</label>
+                        <input type="text" id="social-dm-key" placeholder="Client ID"
+                            class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-900">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Client
+                            Secret</label>
+                        <input type="password" id="social-dm-secret" placeholder="Client Secret"
+                            class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-900">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Username</label>
+                        <input type="text" id="social-dm-username" placeholder="Email / Username"
+                            class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
+                        <input type="password" id="social-dm-password" placeholder="Password"
+                            class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900">
+                    </div>
+                </div>
+
+                <div id="social-fields-token" class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Access
+                        Token</label>
+                    <textarea id="social-token" placeholder="Paste your token here..."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono h-24 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-inner"></textarea>
+                </div>
+
+                <div id="social-verify-status" class="hidden p-4 rounded-xl text-xs font-bold text-center"></div>
+
+                <div class="flex gap-4 pt-2">
+                    <button onclick="setSocialModalStep('PLATFORM')"
+                        class="flex-1 py-3 text-slate-400 font-extrabold text-sm uppercase tracking-widest hover:text-slate-600 transition-colors">Back</button>
+                    <button onclick="saveSocialAccount()" id="social-save-btn"
+                        class="flex-[2] py-4 bg-blue-600 rounded-2xl font-bold text-white text-sm shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Save
+                        Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let settings = {};
+        let currentSubView = null;
+        let editingId = null;
+
+        async function init() {
+            lucide.createIcons();
+            await loadSettings();
+            startLiveClock();
+            applyTheme();
+        }
+
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                settings = await res.json();
+                updateUI();
+            } catch (e) { console.error("Load failed", e); }
+        }
+
+        function updateUI() {
+            // Toggles
+            updateToggle('toggle-worker', settings.enable_background_worker);
+            updateToggle('toggle-dedicated', settings.dedicated_server_mode);
+            updateToggle('toggle-voice', settings.voice_alerts);
+            updateToggle('toggle-notifications', settings.enable_notifications);
+            updateToggle('toggle-theme', settings.theme === 'light', 'yellow-500');
+
+            // NCA Status
+            document.getElementById('nca-status-badge').innerText = settings.nca_api_url ? 'Active & Configured' : 'Not Setup';
+            document.getElementById('nca-status-badge').className = settings.nca_api_url ? 'text-[10px] text-green-500 font-bold uppercase tracking-widest' : 'text-[10px] text-gray-500 font-bold uppercase tracking-widest';
+
+            document.getElementById('nca-url').value = settings.nca_api_url || '';
+            document.getElementById('nca-hf-token').value = settings.hf_token || '';
+            document.getElementById('nca-hf-repo').value = settings.hf_repo || '';
+
+            // Time Zone
+            // document.getElementById('tz-current').innerText = settings.time_zone || 'Asia/Dhaka'; // This element is removed
+            populateTimeZones();
+
+            // Lists
+            renderAiList();
+            renderImgList();
+            renderSocialList();
+            updateYoutubeBridgeUI();
+        }
+
+        function updateToggle(id, state, activeColor = 'blue-600') {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = `w-12 h-6 rounded-full p-1 cursor-pointer transition-all ${state ? 'bg-' + activeColor : 'bg-[#2A2A2A]'}`;
+            el.children[0].className = `bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${state ? 'translate-x-6' : ''}`;
+        }
+
+        async function toggleSetting(key) {
+            settings[key] = !settings[key];
+            updateUI();
+            await saveSettings();
+        }
+
+        async function saveSettings() {
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                if (!res.ok) throw new Error("Server rejected settings");
+            } catch (e) { alert("Save failed: " + e.message); }
+        }
+
+        // --- THEME ---
+        function toggleTheme() {
+            settings.theme = settings.theme === 'light' ? 'dark' : 'light';
+            applyTheme();
+            updateUI();
+            saveSettings();
+        }
+
+        function applyTheme() {
+            if (settings.theme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        }
+
+        // --- NAVIGATION ---
+        function showSubView(id) {
+            currentSubView = id;
+            document.getElementById('settings-main').classList.add('hidden');
+            document.getElementById('main-header').classList.add('hidden');
+            document.getElementById('subview-header').classList.remove('hidden');
+
+            const viewEl = document.getElementById(`view-${id}`);
+            viewEl.classList.remove('hidden');
+
+            const titleMap = {
+                ai_config: 'AI Configurations',
+                img_config: 'Image Workers',
+                social_config: 'Connected Accounts',
+                yt_bridge: 'YouTube Bridge',
+                time_config: 'Time Zone'
+            };
+            document.getElementById('subview-title').innerText = titleMap[id] || 'Settings';
+
+            // Add Contextual Actions
+            const actions = document.getElementById('subview-actions');
+            actions.innerHTML = '';
+            if (id === 'ai_config') {
+                actions.innerHTML = `<button onclick="openAiModal()" class="text-blue-500 font-bold text-sm bg-blue-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Add</button>`;
+            } else if (id === 'img_config') {
+                actions.innerHTML = `<button onclick="openImgModal()" class="text-purple-500 font-bold text-sm bg-purple-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Add</button>`;
+            } else if (id === 'social_config') {
+                actions.innerHTML = `<button onclick="openSocialModal()" class="text-green-500 font-bold text-sm bg-green-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Link</button>`;
+            }
+            lucide.createIcons();
+        }
+
+        function hideSubView() {
+            if (!currentSubView) return;
+            document.getElementById(`view-${currentSubView}`).classList.add('hidden');
+            document.getElementById('settings-main').classList.remove('hidden');
+            document.getElementById('main-header').classList.remove('hidden');
+            document.getElementById('subview-header').classList.add('hidden');
+            currentSubView = null;
+        }
+
+        // --- AI CONFIG ---
+        function renderAiList() {
+            const list = document.getElementById('ai-list');
+            const configs = settings.ai_configs || [];
+            if (configs.length === 0) {
+                list.innerHTML = `<div class="flex flex-col items-center justify-center p-20 opacity-40"><i data-lucide="cpu" class="w-16 h-16 mb-4 text-slate-300"></i><p class="text-sm font-extrabold text-slate-400 uppercase tracking-widest">No AI Brains Configured</p></div>`;
+            } else {
+                list.innerHTML = configs.map(c => `
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between group hover:border-blue-500/30 hover:shadow-md transition-all">
+                        <div class="flex items-center gap-5">
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 transition-transform group-hover:scale-110">
+                                <i data-lucide="sparkles" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <span class="block font-extrabold text-slate-900">${c.configName}</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${c.provider} • ${c.model}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openAiModal('${c.id}')" class="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><i data-lucide="edit-3" class="w-5 h-5"></i></button>
+                            <button onclick="deleteAiConfig('${c.id}')" class="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        }
+
+        function openAiModal(id = null) {
+            editingId = id;
+            const modelSelect = document.getElementById('ai-model-select');
+            const status = document.getElementById('ai-verify-status');
+            status.classList.add('hidden');
+
+            if (id) {
+                const c = settings.ai_configs.find(x => x.id === id);
+                document.getElementById('ai-name').value = c.configName;
+                document.getElementById('ai-provider').value = c.provider;
+                document.getElementById('ai-key').value = c.apiKey;
+
+                // Pre-fill model select
+                modelSelect.innerHTML = `<option value="${c.model}">${c.model}</option>`;
+                modelSelect.value = c.model;
+
+                document.getElementById('ai-modal-title').innerText = "Edit AI Brain";
+            } else {
+                document.getElementById('ai-name').value = '';
+                document.getElementById('ai-provider').value = 'Gemini';
+                document.getElementById('ai-key').value = '';
+                modelSelect.innerHTML = `<option value="">Verify Key to Load Models</option>`;
+                document.getElementById('ai-modal-title').innerText = "Add AI Brain";
+            }
+            document.getElementById('ai-modal').classList.remove('hidden');
+        }
+
+        async function verifyAiKey() {
+            const provider = document.getElementById('ai-provider').value;
+            const apiKey = document.getElementById('ai-key').value;
+            const btn = document.getElementById('btn-ai-verify');
+            const status = document.getElementById('ai-verify-status');
+            const modelSelect = document.getElementById('ai-model-select');
+
+            if (!apiKey) return alert("Enter API Key first.");
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500"></i>`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/ai/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, apiKey })
+                });
+                const data = await res.json();
+
+                if (data.isValid) {
+                    status.innerText = "API Key Verified!";
+                    status.className = "p-3 rounded-xl text-[10px] font-bold text-center bg-green-50 text-green-600 border border-green-100 block animate-fade-in";
+
+                    // Populate Models
+                    modelSelect.innerHTML = data.models.map(m => `<option value="${m}">${m}</option>`).join('');
+                } else {
+                    status.innerText = "Invalid API Key";
+                    status.className = "p-3 rounded-xl text-[10px] font-bold text-center bg-red-50 text-red-600 border border-red-100 block animate-fade-in";
+                }
+            } catch (e) {
+                status.innerText = "Verification Failed";
+                status.className = "p-3 rounded-xl text-[10px] font-bold text-center bg-red-50 text-red-600 border border-red-100 block animate-fade-in";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i>`;
+                lucide.createIcons();
+            }
+        }
+
+        function closeAiModal() { document.getElementById('ai-modal').classList.add('hidden'); editingId = null; }
+
+        async function saveAiConfig() {
+            const config = {
+                id: editingId || Date.now().toString(),
+                configName: document.getElementById('ai-name').value,
+                provider: document.getElementById('ai-provider').value,
+                model: document.getElementById('ai-model-select').value,
+                apiKey: document.getElementById('ai-key').value
+            };
+            if (!settings.ai_configs) settings.ai_configs = [];
+
+            if (editingId) {
+                const idx = settings.ai_configs.findIndex(x => x.id === editingId);
+                settings.ai_configs[idx] = config;
+            } else {
+                settings.ai_configs.push(config);
+            }
+
+            await saveSettings();
+            closeAiModal();
+            updateUI();
+        }
+
+        async function deleteAiConfig(id) {
+            if (!confirm("Remove this configuration?")) return;
+            settings.ai_configs = settings.ai_configs.filter(c => c.id !== id);
+            await saveSettings();
+            updateUI();
+        }
+
+        // --- IMG CONFIG ---
+        function renderImgList() {
+            const list = document.getElementById('img-list');
+            const configs = settings.image_gen_configs || [];
+            if (configs.length === 0) {
+                list.innerHTML = `<div class="flex flex-col items-center justify-center p-20 opacity-40"><i data-lucide="image" class="w-16 h-16 mb-4 text-slate-300"></i><p class="text-sm font-extrabold text-slate-400 uppercase tracking-widest">No Image Workers</p></div>`;
+            } else {
+                list.innerHTML = configs.map(c => `
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between group hover:border-purple-500/30 hover:shadow-md transition-all">
+                        <div class="flex items-center gap-5">
+                            <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 transition-transform group-hover:scale-110">
+                                <i data-lucide="zap" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <span class="block font-extrabold text-slate-900">${c.label}</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate w-40 block">${c.workerUrl}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <button onclick="openImgModal('${c.id}')" class="p-3 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"><i data-lucide="edit-3" class="w-5 h-5"></i></button>
+                            <button onclick="deleteImgConfig('${c.id}')" class="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        }
+
+        function openImgModal(id = null) {
+            editingId = id;
+            const status = document.getElementById('img-verify-status');
+            status.classList.add('hidden');
+
+            if (id) {
+                const c = settings.image_gen_configs.find(x => x.id === id);
+                document.getElementById('img-name').value = c.label;
+                document.getElementById('img-url').value = c.workerUrl;
+                document.getElementById('img-key').value = c.apiKey;
+                document.getElementById('img-modal-title').innerText = "Edit Worker";
+            } else {
+                document.getElementById('img-name').value = '';
+                document.getElementById('img-url').value = '';
+                document.getElementById('img-key').value = '';
+                document.getElementById('img-modal-title').innerText = "Add Worker";
+            }
+            document.getElementById('img-modal').classList.remove('hidden');
+        }
+
+        function closeImgModal() { document.getElementById('img-modal').classList.add('hidden'); editingId = null; }
+
+        async function verifyImgKey() {
+            const workerUrl = document.getElementById('img-url').value;
+            const apiKey = document.getElementById('img-key').value;
+            const btn = document.getElementById('btn-img-verify');
+            const status = document.getElementById('img-verify-status');
+
+            if (!workerUrl || !apiKey) return alert("Enter URL and API Key first.");
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-purple-500"></i>`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/ai/verify-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workerUrl, apiKey })
+                });
+                const data = await res.json();
+
+                if (data.isValid) {
+                    status.innerText = "Worker Verified Successfully!";
+                    status.className = "p-3 rounded-xl text-[10px] font-bold text-center bg-green-50 text-green-600 border border-green-100 block animate-fade-in";
+                } else {
+                    status.innerText = data.error || "Invalid Worker Configuration";
+                    status.className = "p-3 rounded-xl text-[10px] font-bold text-center bg-red-50 text-red-600 border border-red-100 block animate-fade-in";
+                }
+            } catch (e) {
+                status.innerText = "Verification Failed";
+                status.className = "p-3 rounded-xl text-[10px] font-bold text-center bg-red-50 text-red-600 border border-red-100 block animate-fade-in";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> Verify & Sync`;
+                lucide.createIcons();
+            }
+        }
+
+        async function saveImgConfig() {
+            const config = {
+                id: editingId || Date.now().toString(),
+                label: document.getElementById('img-name').value,
+                workerUrl: document.getElementById('img-url').value,
+                apiKey: document.getElementById('img-key').value
+            };
+            if (!settings.image_gen_configs) settings.image_gen_configs = [];
+
+            if (editingId) {
+                const idx = settings.image_gen_configs.findIndex(x => x.id === editingId);
+                settings.image_gen_configs[idx] = config;
+            } else {
+                settings.image_gen_configs.push(config);
+            }
+
+            await saveSettings();
+            closeImgModal();
+            updateUI();
+        }
+
+        async function deleteImgConfig(id) {
+            if (!confirm("Remove this worker?")) return;
+            settings.image_gen_configs = settings.image_gen_configs.filter(c => c.id !== id);
+            await saveSettings();
+            updateUI();
+        }
+
+        // --- NCA CONFIG ---
+        async function verifyAndSaveNca() {
+            const url = document.getElementById('nca-url').value;
+            const token = document.getElementById('nca-hf-token').value;
+            const repo = document.getElementById('nca-hf-repo').value;
+
+            const btn = document.getElementById('btn-nca-save');
+            const status = document.getElementById('nca-verify-status');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Verifying...`;
+            lucide.createIcons();
+
+            try {
+                settings.nca_api_url = url;
+                settings.hf_token = token;
+                settings.hf_repo = repo;
+                await saveSettings();
+
+                status.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Configuration Saved Successfully!`;
+                status.className = "p-3 rounded-lg text-xs font-bold text-center bg-green-900/20 text-green-500 flex items-center justify-center gap-2 animate-fade-in";
+                status.classList.remove('hidden');
+                updateUI();
+            } catch (err) {
+                status.innerText = "Error saving configuration";
+                status.className = "p-3 rounded-lg text-xs font-bold text-center bg-red-900/20 text-red-500 animate-fade-in";
+                status.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Verify & Save";
+            }
+        }
+
+        // --- SOCIAL ---
+        let selectedSocialPlatform = 'FACEBOOK';
+
+        function renderSocialList() {
+            const list = document.getElementById('social-list');
+            const empty = document.getElementById('social-empty-state');
+            const acts = settings.social_media_accounts || [];
+
+            if (acts.length === 0) {
+                list.classList.add('hidden');
+                empty.classList.remove('hidden');
+            } else {
+                list.classList.remove('hidden');
+                empty.classList.add('hidden');
+                list.innerHTML = acts.map(a => `
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between group hover:border-green-500/30 hover:shadow-md transition-all animate-fade-in">
+                        <div class="flex items-center gap-5">
+                            <div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-green-600 group-hover:bg-green-50 transition-all">
+                                ${getSocialIcon(a.platform)}
+                            </div>
+                            <div>
+                                <span class="block font-extrabold text-slate-900">${a.account_name}</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${a.platform} • ${a.handle || a.page_id || 'Connected'}</span>
+                            </div>
+                        </div>
+                        <button onclick="deleteSocialAccount('${a.id}')" class="p-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-110"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        }
+
+        function getSocialIcon(p) {
+            if (p === 'FACEBOOK') return '<i data-lucide="facebook" class="w-6 h-6"></i>';
+            if (p === 'YOUTUBE') return '<i data-lucide="youtube" class="w-6 h-6"></i>';
+            if (p === 'X') return '<i data-lucide="twitter" class="w-6 h-6"></i>';
+            if (p === 'DAILYMOTION') return '<span class="font-bold text-lg">dm</span>';
+            return '<i data-lucide="globe" class="w-6 h-6"></i>';
+        }
+
+        function openSocialModal() {
+            setSocialModalStep('PLATFORM');
+            document.getElementById('social-modal').classList.remove('hidden');
+        }
+
+        function closeSocialModal() {
+            document.getElementById('social-modal').classList.add('hidden');
+        }
+
+        function setSocialModalStep(step) {
+            const platformStep = document.getElementById('social-modal-step-platform');
+            const detailsStep = document.getElementById('social-modal-step-details');
+            const header = document.getElementById('social-modal-platform-header');
+
+            if (step === 'PLATFORM') {
+                platformStep.classList.remove('hidden');
+                detailsStep.classList.add('hidden');
+                header.classList.add('hidden');
+            } else {
+                platformStep.classList.add('hidden');
+                detailsStep.classList.remove('hidden');
+                header.classList.remove('hidden');
+                updateSocialFieldsVisibility();
+            }
+        }
+
+        function selectSocialPlatform(p) {
+            selectedSocialPlatform = p;
+            const display = document.getElementById('social-selected-platform-display');
+            display.innerHTML = `${getSocialIcon(p)} <span>${p} Account</span>`;
+            setSocialModalStep('DETAILS');
+            lucide.createIcons();
+        }
+
+        function updateSocialFieldsVisibility() {
+            const p = selectedSocialPlatform;
+            document.getElementById('social-fields-fb').classList.toggle('hidden', p !== 'FACEBOOK');
+            document.getElementById('social-fields-yt').classList.toggle('hidden', p !== 'YOUTUBE');
+            document.getElementById('social-fields-x').classList.toggle('hidden', p !== 'X');
+            document.getElementById('social-fields-dm').classList.toggle('hidden', p !== 'DAILYMOTION');
+
+            // Access Token is common for most but handled specially for YT/X
+            document.getElementById('social-fields-token').classList.toggle('hidden', p === 'YOUTUBE' || p === 'X' || p === 'DAILYMOTION');
+        }
+
+        async function saveSocialAccount() {
+            const btn = document.getElementById('social-save-btn');
+            const status = document.getElementById('social-verify-status');
+
+            btn.disabled = true;
+            btn.innerText = "Verifying...";
+
+            const acc = {
+                id: Date.now().toString(),
+                platform: selectedSocialPlatform,
+                account_name: document.getElementById('social-name').value,
+            };
+
+            const creds = {};
+
+            // Collect fields and prepare creds for backend verification
+            if (selectedSocialPlatform === 'FACEBOOK') {
+                acc.page_id = document.getElementById('social-fb-page-id').value;
+                acc.access_token = document.getElementById('social-token').value;
+                creds.page_id = acc.page_id;
+                creds.access_token = acc.access_token;
+            } else if (selectedSocialPlatform === 'YOUTUBE') {
+                acc.client_id = document.getElementById('social-yt-client-id').value;
+                acc.client_secret = document.getElementById('social-yt-client-secret').value;
+                creds.client_id = acc.client_id;
+                creds.client_secret = acc.client_secret;
+            } else if (selectedSocialPlatform === 'X') {
+                acc.handle = document.getElementById('social-x-handle').value;
+                acc.x_api_key = document.getElementById('social-x-api-key').value;
+                acc.x_api_secret = document.getElementById('social-x-api-secret').value;
+                acc.x_access_token = document.getElementById('social-x-access-token').value;
+                acc.x_token_secret = document.getElementById('social-x-token-secret').value;
+                creds.api_key = acc.x_api_key;
+                creds.api_secret = acc.x_api_secret;
+                creds.access_token = acc.x_access_token;
+                creds.access_token_secret = acc.x_token_secret;
+            } else if (selectedSocialPlatform === 'DAILYMOTION') {
+                acc.dm_username = document.getElementById('social-dm-username').value;
+                acc.dm_password = document.getElementById('social-dm-password').value;
+                acc.api_key = document.getElementById('social-dm-key').value;
+                acc.api_secret = document.getElementById('social-dm-secret').value;
+                creds.api_key = acc.api_key;
+                creds.api_secret = acc.api_secret;
+                creds.username = acc.dm_username;
+                creds.password = acc.dm_password;
+            } else {
+                acc.handle = document.getElementById('social-id').value;
+                acc.access_token = document.getElementById('social-token').value;
+            }
+
+            if (!acc.account_name) {
+                alert("Please enter a label");
+                btn.disabled = false;
+                btn.innerText = "Save Account";
+                return;
+            }
+
+            try {
+                // Real backend verification
+                const verifyRes = await fetch('/api/social/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: selectedSocialPlatform,
+                        credentials: creds
+                    })
+                });
+
+                const verifyData = await verifyRes.json();
+                if (!verifyRes.ok) {
+                    throw new Error(verifyData.detail || "Verification Failed");
+                }
+
+                status.innerText = "Success! Account Verified";
+                status.className = "p-4 rounded-xl text-xs font-bold text-center bg-green-50 text-green-600 border border-green-100 animate-fade-in";
+                status.classList.remove('hidden');
+
+                // NEW: Fetch Profile Parity
+                try {
+                    btn.innerText = "Fetching Profile...";
+                    const profileRes = await fetch('/api/social/profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            platform: selectedSocialPlatform,
+                            credentials: creds
+                        })
+                    });
+                    const profileData = await profileRes.json();
+                    if (profileRes.ok && profileData.profile) {
+                        acc.profile_picture_url = profileData.profile.profilePictureUrl;
+                        if (!acc.account_name || acc.account_name.includes('Account')) {
+                            acc.account_name = profileData.profile.accountName;
+                        }
+                    }
+                } catch (pe) { console.warn("Profile fetch failed:", pe); }
+
+                if (!settings.social_media_accounts) settings.social_media_accounts = [];
+                settings.social_media_accounts.push(acc);
+                await saveSettings();
+
+                setTimeout(() => {
+                    closeSocialModal();
+                    updateUI();
+                }, 1000);
+            } catch (err) {
+                status.innerText = `Error: ${err.message}`;
+                status.className = "p-3 rounded-xl text-xs font-bold text-center bg-red-500/10 text-red-500 animate-fade-in";
+                status.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save Account";
+            }
+        }
+
+        async function deleteSocialAccount(id) {
+            if (!confirm("Are you sure you want to decouple this account?")) return;
+            settings.social_media_accounts = settings.social_media_accounts.filter(a => a.id !== id);
+            await saveSettings();
+            updateUI();
+        }
+
+        // --- TIME ---
+        const AVAILABLE_ZONES = [
+            'Asia/Dhaka',
+            'America/New_York',
+            'Europe/London',
+            'Asia/Tokyo',
+            'Australia/Sydney',
+            'UTC'
+        ];
+
+        function populateTimeZones() {
+            const select = document.getElementById('time-zone-select');
+            const current = settings.time_zone || 'Asia/Dhaka';
+
+            // Logic matching TimeSettingScreen.tsx: Array.from(new Set([...AVAILABLE_ZONES, selectedZone])).sort()
+            const displayZones = Array.from(new Set([...AVAILABLE_ZONES, current])).sort();
+
+            select.innerHTML = displayZones.map(zone => {
+                const label = zone.split('/')[1]?.replace('_', ' ') || 'Local';
+                return `<option value="${zone}">${zone} (${label})</option>`;
+            }).join('');
+
+            select.value = current;
+            updateLiveClockDisplay();
+        }
+
+        function updateLiveClockDisplay() {
+            const select = document.getElementById('time-zone-select');
+            const display = document.getElementById('tz-display-name');
+            const zone = select.value;
+            display.innerText = zone.split('/')[1]?.replace('_', ' ') || zone;
+            updateClock();
+        }
+
+        function updateClock() {
+            const timeEl = document.getElementById('live-clock');
+            const dateEl = document.getElementById('live-date');
+            if (!timeEl || !dateEl) return;
+
+            const now = new Date();
+            const tz = document.getElementById('time-zone-select').value || settings.time_zone || 'Asia/Dhaka';
+
+            try {
+                const timeStr = now.toLocaleTimeString('en-US', {
+                    timeZone: tz,
+                    hour12: true,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                const dateStr = now.toLocaleDateString('en-US', {
+                    timeZone: tz,
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                timeEl.innerText = timeStr;
+                dateEl.innerText = dateStr;
+            } catch (e) {
+                timeEl.innerText = "Invalid Zone";
+                dateEl.innerText = "Please check format";
+            }
+        }
+
+        function startLiveClock() {
+            setInterval(updateClock, 1000);
+            updateClock();
+        }
+
+        function useLocalTimeZone() {
+            const systemZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const select = document.getElementById('time-zone-select');
+
+            // Add if not exists
+            if (!AVAILABLE_ZONES.includes(systemZone)) {
+                const opt = document.createElement('option');
+                opt.value = systemZone;
+                opt.innerText = `${systemZone} (${systemZone.split('/')[1]?.replace('_', ' ') || 'System'})`;
+                select.appendChild(opt);
+            }
+
+            select.value = systemZone;
+            updateLiveClockDisplay();
+        }
+
+        async function saveTimeZone() {
+            settings.time_zone = document.getElementById('time-zone-select').value;
+            await saveSettings();
+            updateUI();
+
+            // Show feedback
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> Saved!`;
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                lucide.createIcons();
+            }, 2000);
+        }
+
+        // --- BACKUP ---
+        function exportBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `nexus_backup_${new Date().toISOString().split('T')[0]}.json`);
+            dlAnchorElem.click();
+        }
+
+        function importBackup() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = async res => {
+                    try {
+                        const imported = JSON.parse(res.target.result);
+                        settings = imported;
+                        await saveSettings();
+                        alert("Settings Restored!");
+                        location.reload();
+                    } catch (err) { alert("Invalid Backup File"); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // --- YOUTUBE BRIDGE ---
+        async function updateYoutubeBridgeUI() {
+            try {
+                const res = await fetch('/api/youtube/status');
+                const status = await res.json();
+
+                const badge = document.getElementById('yt-bridge-status');
+                const statusDiv = document.getElementById('yt-connection-status');
+                const redirectInput = document.getElementById('yt-redirect-uri');
+
+                // Pre-fill fields if settings exist
+                if (status.clientId) document.getElementById('yt-client-id').value = status.clientId;
+                if (status.clientSecret) document.getElementById('yt-client-secret').value = status.clientSecret;
+
+                // Set Redirect URI pre-fill (Origin + /api/youtube/callback)
+                const origin = window.location.origin;
+                redirectInput.value = `${origin}/api/youtube/callback`;
+
+                if (status.connected) {
+                    badge.innerText = 'Authenticated';
+                    badge.className = 'text-[10px] text-green-500 font-bold uppercase tracking-widest';
+
+                    statusDiv.className = 'p-4 rounded-xl text-sm font-semibold flex items-center justify-between bg-green-900/10 text-green-500 border border-green-900/20';
+                    statusDiv.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                            Server Connected
+                        </div>
+                        <span class="text-[10px] opacity-70">Refresh Token OK</span>
+                    `;
+                    statusDiv.classList.remove('hidden');
+                } else {
+                    badge.innerText = status.configured ? 'Ready to Login' : 'Not Configured';
+                    badge.className = 'text-[10px] text-gray-500 font-bold uppercase tracking-widest';
+                    statusDiv.classList.add('hidden');
+                }
+                lucide.createIcons();
+            } catch (e) {
+                console.error("YT Status failed", e);
+            }
+        }
+
+        async function handleYoutubeConnect() {
+            const clientId = document.getElementById('yt-client-id').value;
+            const clientSecret = document.getElementById('yt-client-secret').value;
+            const redirectUri = document.getElementById('yt-redirect-uri').value;
+
+            if (!clientId || !clientSecret) {
+                alert("Please enter Client ID and Secret first.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-yt-connect');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Initializing...`;
+            lucide.createIcons();
+
+            try {
+                // 1. Save Config
+                await fetch('/api/youtube/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientId, clientSecret, redirectUri })
+                });
+
+                // 2. Get Auth URL
+                const authRes = await fetch(`/api/youtube/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+                const { url } = await authRes.json();
+
+                // 3. Open Popup
+                const width = 500;
+                const height = 600;
+                const left = window.screenX + (window.innerWidth - width) / 2;
+                const top = window.screenY + (window.innerHeight - height) / 2;
+
+                const popup = window.open(url, 'youtube_auth', `width=${width},height=${height},left=${left},top=${top}`);
+
+                // 4. Start Polling
+                const pollInterval = setInterval(async () => {
+                    if (popup.closed) {
+                        clearInterval(pollInterval);
+                        btn.disabled = false;
+                        btn.innerHTML = `<i data-lucide="log-in" class="w-5 h-5"></i> Connect with Google`;
+                        lucide.createIcons();
+                        await updateYoutubeBridgeUI();
+                        return;
+                    }
+
+                    const statusRes = await fetch('/api/youtube/status');
+                    const status = await statusRes.json();
+                    if (status.connected) {
+                        clearInterval(pollInterval);
+                        popup.close();
+                        btn.disabled = false;
+                        btn.innerHTML = `<i data-lucide="log-in" class="w-5 h-5"></i> Connect with Google`;
+                        lucide.createIcons();
+                        await updateYoutubeBridgeUI();
+                    }
+                }, 2000);
+
+            } catch (e) {
+                alert("Connection failed: " + e.message);
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="log-in" class="w-5 h-5"></i> Connect with Google`;
+                lucide.createIcons();
+            }
+        }
+
+        function copyToClipboard(id) {
+            const el = document.getElementById(id);
+            el.select();
+            document.execCommand('copy');
+            alert("Copied to clipboard!");
+        }
+
+        // --- BACKUP & RESTORE ---
+        const BACKUP_KEY = "SECURE_AUTOMATION_APP_KEY_2025";
+
+        async function handleExport() {
+            try {
+                // 1. Gather all data
+                const settingsRes = await fetch('/api/settings');
+                const settings = await settingsRes.json();
+
+                const feedsRes = await fetch('/api/feeds');
+                const feeds = await feedsRes.json();
+
+                const assistantsRes = await fetch('/api/assistants');
+                const assistants = await assistantsRes.json();
+
+                const jobsRes = await fetch('/api/jobs');
+                const jobs = await jobsRes.json();
+
+                const historyRes = await fetch('/api/history/posts');
+                const history = await historyRes.json();
+
+                const fullConfig = {
+                    settings,
+                    feeds,
+                    assistants,
+                    jobs,
+                    history,
+                    timestamp: new Date().toISOString(),
+                    type: 'FBA_BACKUP'
+                };
+
+                // 2. Encrypt via Backend
+                const encryptRes = await fetch('/api/backup/encrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: JSON.stringify(fullConfig), key: BACKUP_KEY })
+                });
+                const { encrypted } = await encryptRes.json();
+
+                // 3. Download
+                const blob = new Blob([encrypted], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `fba_backup_${Date.now()}.securebackup`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert("Backup successful!");
+            } catch (e) {
+                console.error("Export failed", e);
+                alert("Export failed: " + e.message);
+            }
+        }
+
+        async function handleRestore(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm("RESTORE: This will overwrite CURRENT settings. Continue?")) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const encrypted = e.target.result;
+                try {
+                    // 1. Decrypt via Backend
+                    const decryptRes = await fetch('/api/backup/decrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: encrypted, key: BACKUP_KEY })
+                    });
+
+                    if (!decryptRes.ok) throw new Error("Decryption failed. Invalid file or key.");
+
+                    const { decrypted } = await decryptRes.json();
+                    const data = JSON.parse(decrypted);
+
+                    // 2. Apply Settings
+                    if (data.settings) {
+                        await fetch('/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data.settings)
+                        });
+                    }
+
+                    // 3. Apply Feeds
+                    if (data.feeds) {
+                        for (const feed of data.feeds) {
+                            await fetch('/api/feeds', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(feed)
+                            });
+                        }
+                    }
+
+                    // 4. Apply Assistants
+                    if (data.assistants) {
+                        for (const flow of data.assistants) {
+                            await fetch('/api/assistants', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(flow)
+                            });
+                        }
+                    }
+
+                    // 5. Apply Jobs
+                    if (data.jobs) {
+                        for (const job of data.jobs) {
+                            await fetch('/api/jobs', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(job)
+                            });
+                        }
+                    }
+
+                    // 6. Apply History
+                    if (data.history) {
+                        for (const post of data.history) {
+                            await fetch('/api/history/posts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(post)
+                            });
+                        }
+                    }
+
+                    alert("Restore successful! Reloading...");
+                    window.location.reload();
+
+                } catch (err) {
+                    console.error("Restore failed", err);
+                    alert("Restore failed: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        blue: {
+                            500: '#3b82f6',
+                            600: '#2563eb'
+                        },
+                        background: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0'
+                    },
+                    primary: '#2563eb'
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-slate-50 text-slate-900 h-screen flex flex-col overflow-hidden font-['Inter']">
+
+    <!-- Header -->
+    <header
+        class="flex items-center justify-between px-6 py-5 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+        <h1 class="text-xl font-extrabold flex items-center gap-3 text-slate-900 tracking-tight">
+            <div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+            </div>
+            Analytics Center
+        </h1>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 pb-24 container mx-auto max-w-2xl">
+        <!-- Tab Selector -->
+        <div class="flex gap-1.5 p-1.5 bg-white border border-slate-200 rounded-2xl mb-6 shadow-sm">
+            <button onclick="switchTab('social')" id="tab-social"
+                class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                Social Stats
+            </button>
+            <button onclick="switchTab('trends')" id="tab-trends"
+                class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                Market Trends
+            </button>
+        </div>
+
+        <!-- SOCIAL TAB -->
+        <div id="view-social" class="space-y-6">
+            <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl"></div>
+                <div id="social-content" class="min-h-[300px] flex flex-col items-center justify-center relative">
+                    <div class="flex flex-col items-center gap-4 text-slate-300">
+                        <i data-lucide="loader-2" class="w-12 h-12 animate-spin text-blue-500"></i>
+                        <p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Loading Social
+                            Data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRENDS TAB -->
+        <div id="view-trends" class="space-y-6 hidden">
+            <!-- Trend Source Selector -->
+            <div class="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 shadow-sm">
+                <button onclick="switchTrendSource('google')" id="btn-trend-google"
+                    class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-900 text-white shadow-xl shadow-slate-900/20">
+                    <i data-lucide="globe" class="w-4 h-4"></i> Google Trends
+                </button>
+                <button onclick="switchTrendSource('nca')" id="btn-trend-nca"
+                    class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase">
+                    <i data-lucide="zap" class="w-4 h-4"></i> NCA Kit Trends
+                </button>
+            </div>
+
+            <!-- GOOGLE SECTION -->
+            <div id="section-google"
+                class="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-100/30 rounded-full blur-3xl"></div>
+                <div class="flex items-center justify-between mb-6 relative">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xs font-extrabold text-slate-900 uppercase tracking-widest">Market Discovery
+                        </h3>
+                    </div>
+                    <span
+                        class="px-2.5 py-1 text-[10px] font-extrabold bg-green-50 text-green-600 border border-green-100 rounded-full uppercase tracking-widest">Free</span>
+                </div>
+
+                <div class="space-y-6 relative">
+                    <div>
+                        <label
+                            class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1 mb-2.5">Enter
+                            Seed
+                            Keyword</label>
+                        <div class="relative group">
+                            <input type="text" id="google-search" placeholder="e.g. Health & Fitness"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-inner">
+                            <button onclick="fetchGoogleResults()"
+                                class="absolute right-2.5 top-2.5 w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all shadow-lg active:scale-95">
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Categories -->
+                    <div class="flex gap-1.5 flex-wrap">
+                        <button onclick="fetchGoogleResults('entertainment')"
+                            class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 border dark:border-gray-600 hover:border-blue-400">🎬
+                            Entertainment</button>
+                        <button onclick="fetchGoogleResults('funny')"
+                            class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 border dark:border-gray-600 hover:border-blue-400">😂
+                            Funny</button>
+                        <button onclick="fetchGoogleResults('tech')"
+                            class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 border dark:border-gray-600 hover:border-blue-400">💻
+                            Tech</button>
+                        <button onclick="fetchGoogleResults('food')"
+                            class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 border dark:border-gray-600 hover:border-blue-400">🍳
+                            Food</button>
+                    </div>
+
+                    <div id="google-results" class="space-y-2 mt-3 max-h-[300px] overflow-y-auto">
+                        <!-- Results injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- NCA SECTION -->
+            <div id="section-nca"
+                class="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 hidden relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-purple-100/30 rounded-full blur-3xl"></div>
+                <div class="flex items-center justify-between mb-6 relative">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
+                            <i data-lucide="flame" class="w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xs font-extrabold text-slate-900 uppercase tracking-widest">Nexus Pro Trends
+                        </h3>
+                    </div>
+                </div>
+
+                <div class="space-y-6 relative">
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label
+                                class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1 mb-2">Category</label>
+                            <select id="nca-category"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 appearance-none shadow-sm">
+                                <option value="general">Global Trends</option>
+                                <option value="politics">Politics</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="business">Business</option>
+                            </select>
+                        </div>
+                        <div class="w-24">
+                            <label
+                                class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1 mb-2">Count</label>
+                            <select id="nca-count"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 appearance-none shadow-sm">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="fetchNcaResults()"
+                        class="w-full py-5 bg-purple-600 text-white rounded-2xl text-[11px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-purple-500/20 active:scale-95 transition-all">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-purple-200"></i> Get Trending Now
+                    </button>
+                    <div id="nca-results" class="space-y-2.5 mt-2 max-h-[350px] overflow-y-auto scrollbar-hide"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+        if (document.readyState !== 'loading') highlightActiveTab();
+    </script>
+
+    <script src="/static/app.js"></script>
+    <script>
+        lucide.createIcons();
+        let currentTab = 'social';
+        let currentSource = 'google';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+            // Update Tab Buttons
+            document.getElementById('tab-social').className = tab === 'social' ? 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm' : 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase';
+            document.getElementById('tab-trends').className = tab === 'trends' ? 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm' : 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase';
+
+            if (tab === 'social') loadSocialStats();
+        }
+
+        function switchTrendSource(src) {
+            currentSource = src;
+            document.getElementById('section-google').classList.toggle('hidden', src !== 'google');
+            document.getElementById('section-nca').classList.toggle('hidden', src !== 'nca');
+
+            // Update Source Buttons
+            document.getElementById('btn-trend-google').className = src === 'google' ? 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase';
+            document.getElementById('btn-trend-nca').className = src === 'nca' ? 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase';
+        }
+
+        async function loadSocialStats() {
+            const container = document.getElementById('social-content');
+            try {
+                const res = await fetch('/api/analytics/social');
+                const accounts = await res.json();
+
+                if (accounts.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-20 text-slate-300">
+                            <i data-lucide="users" class="w-16 h-16 mx-auto mb-4 opacity-20"></i>
+                            <p class="text-[10px] font-extrabold uppercase tracking-widest">No social profiles connected</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                        ${accounts.map(acc => `
+                            <div class="bg-slate-50 rounded-3xl p-6 border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-blue-500/20 group">
+                                <div class="flex items-center gap-4 mb-5">
+                                    <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm text-slate-900 group-hover:scale-110 transition-transform">
+                                        <i data-lucide="${acc.platform === 'facebook' ? 'facebook' : acc.platform === 'youtube' ? 'youtube' : 'globe'}" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-extrabold text-sm text-slate-900">${acc.accountName}</h3>
+                                        <span class="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest">${acc.platform}</span>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 text-center shadow-sm">
+                                        <p class="text-sm font-extrabold text-slate-900">${acc.views}</p>
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase">Views</span>
+                                    </div>
+                                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 text-center shadow-sm">
+                                        <p class="text-sm font-extrabold text-slate-900">${acc.likes}</p>
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase">Likes</span>
+                                    </div>
+                                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 text-center shadow-sm">
+                                        <p class="text-sm font-extrabold text-slate-900">${acc.followers}</p>
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase">Fans</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                lucide.createIcons();
+
+            } catch (e) {
+                container.innerHTML = `<div class="text-red-500 text-[10px] font-extrabold uppercase tracking-widest text-center py-20">Stats Retrieval Failed</div>`;
+            }
+        }
+
+        async function fetchGoogleResults(preset) {
+            const input = document.getElementById('google-search');
+            if (preset) input.value = preset;
+            const q = input.value;
+            if (!q) return alert("Enter a keyword");
+
+            const container = document.getElementById('google-results');
+            container.innerHTML = `<div class="py-10 text-center"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto text-blue-500"></i></div>`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch(`/api/analytics/suggest?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                const results = data[1] || [];
+
+                if (results.length === 0) {
+                    container.innerHTML = `<div class="py-10 text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">No suggestions found</div>`;
+                    return;
+                }
+
+                container.innerHTML = results.map((r, i) => `
+                    <div class="group p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center hover:bg-white hover:shadow-md hover:border-blue-500/30 cursor-pointer transition-all" onclick="navigator.clipboard.writeText('${r}')">
+                        <div class="flex items-center gap-4">
+                             <div class="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-blue-600 font-extrabold text-[10px] shadow-sm">${i + 1}</div>
+                             <span class="font-extrabold text-sm text-slate-900">${r}</span>
+                        </div>
+                        <i data-lucide="copy" class="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all"></i>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+
+            } catch (e) {
+                container.innerHTML = `<div class="py-10 text-center text-red-500 text-[10px] font-extrabold uppercase tracking-widest">Discovery Error</div>`;
+            }
+        }
+
+        async function fetchNcaResults() {
+            const country = 'united_states'; // Fixed since selector was simplified or can be added back if needed
+            const count = document.getElementById('nca-count').value;
+            const container = document.getElementById('nca-results');
+            container.innerHTML = `<div class="py-10 text-center"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto text-purple-500"></i></div>`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/analytics/nca-trends', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ country, limit: parseInt(count) })
+                });
+
+                if (!res.ok) throw new Error('Failed');
+
+                const data = await res.json();
+                const trends = data.trends || [];
+
+                if (trends.length === 0) {
+                    container.innerHTML = `<div class="py-10 text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">No Pro Trends Available</div>`;
+                    return;
+                }
+
+                container.innerHTML = trends.map(t => `
+                    <div class="group p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center hover:bg-white hover:shadow-md hover:border-purple-500/30 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-purple-600 font-extrabold text-[11px] shadow-sm group-hover:scale-110 transition-transform">#${t.rank}</div>
+                            <span class="font-extrabold text-sm text-slate-900 truncate max-w-[150px]">${t.topic}</span>
+                        </div>
+                        <div class="px-3 py-1.5 bg-white border border-slate-100 text-slate-600 rounded-xl text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
+                            ${t.traffic}
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (e) {
+                container.innerHTML = `<div class="py-10 text-center text-red-500 text-[10px] font-extrabold uppercase tracking-widest">NCA Retrieval Error</div>`;
+            }
+        }
+
+        // Init
+        loadSocialStats();
+    </script>
+</body>
+
+</html>

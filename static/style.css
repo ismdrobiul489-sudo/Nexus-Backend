@@ -1,0 +1,165 @@
+:root {
+    --bg-app: #101622;
+    --bg-card: #1C1E21;
+    --primary: #1877F2;
+    --text-main: #FFFFFF;
+    --text-muted: #9da6b9;
+    --border: #3b4354;
+    --danger: #ef4444;
+    --success: #10b981;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* App Container */
+.app-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+    /* Space for Bottom Nav */
+    width: 100%;
+    max-width: 600px;
+    /* Mobile View Simulation */
+    margin: 0 auto;
+    background: var(--bg-app);
+}
+
+/* Header */
+.screen-header {
+    background: var(--bg-app);
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.screen-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-btn {
+    flex: 1;
+    height: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    gap: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.nav-btn.active {
+    color: var(--primary);
+}
+
+.nav-label {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+/* Components */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    width: 100%;
+}
+
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+    width: 100%;
+    background: #242526;
+    /* Slightly lighter than card */
+    border: 1px solid var(--border);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-family: inherit;
+}
+
+/* Layout Utils */
+.hidden {
+    display: none !important;
+}
+
+.p-4 {
+    padding: 1rem;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Post Generator | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        blue: {
+                            500: '#3b82f6',
+                            600: '#2563eb'
+                        },
+                        background: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0'
+                    },
+                    primary: '#2563eb'
+                }
+            }
+        }
+    </script>
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 h-screen flex flex-col font-['Inter'] overflow-hidden">
+
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Content Studio</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="px-4 py-4 bg-white border-b border-slate-200 scrollbar-hide container mx-auto max-w-2xl">
+        <div class="flex p-1.5 bg-slate-50 rounded-2xl gap-1.5 border border-slate-200 shadow-sm">
+            <button onclick="setMode('text')" id="tab-text"
+                class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-white text-slate-900 shadow-sm border border-slate-200">
+                <i data-lucide="type" class="w-4 h-4"></i> Text
+            </button>
+            <button onclick="setMode('photo')" id="tab-photo"
+                class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-white uppercase">
+                <i data-lucide="image" class="w-4 h-4"></i> Image
+            </button>
+            <button onclick="setMode('video')" id="tab-video"
+                class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-white uppercase">
+                <i data-lucide="clapperboard" class="w-4 h-4"></i> Video
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 pb-32 container mx-auto max-w-2xl">
+        <div class="max-w-2xl mx-auto">
+
+            <!-- TEXT GENERATOR TAB -->
+            <div id="content-text" class="tab-content active animate-fade-in space-y-6">
+                <!-- AI Model Selector -->
+                <div class="space-y-3">
+                    <label
+                        class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Assistant
+                        Brain</label>
+                    <div class="relative group">
+                        <div onclick="toggleModelDropdown()"
+                            class="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm font-extrabold text-slate-900 flex items-center justify-between cursor-pointer group-hover:border-blue-500/30 transition-all shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                                </div>
+                                <span id="selected-model-name">Loading Assistants...</span>
+                            </div>
+                            <i data-lucide="chevron-down"
+                                class="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-all"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Textarea -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Source
+                        Content</label>
+                    <textarea id="prompt-input" placeholder="Paste an article, idea, or keywords here..."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 text-sm focus:outline-none focus:ring-4 focus:ring-purple-500/5 focus:border-purple-500 transition-all text-slate-900 shadow-inner h-40 resize-none font-medium"></textarea>
+                </div>
+
+                <button onclick="generatePost()" id="btn-generate"
+                    class="w-full py-5 bg-slate-900 text-white rounded-[2rem] text-[11px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-slate-900/10 active:scale-95 transition-all group overflow-hidden relative">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    </div>
+                    <i data-lucide="sparkles" class="w-4 h-4 relative z-10"></i>
+                    <span class="relative z-10">Generate Masterpiece</span>
+                </button>
+
+                <!-- Output Area -->
+                <div id="output-area" class="hidden animate-fade-in space-y-6">
+                    <div class="flex items-center justify-between px-2">
+                        <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Draft
+                            Output</label>
+                        <button onclick="copyToClipboard()"
+                            class="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest flex items-center gap-1.5 hover:bg-blue-50 px-3 py-1.5 rounded-xl transition-all">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Text
+                        </button>
+                    </div>
+                    <textarea id="generated-output"
+                        class="w-full bg-white border border-slate-200 rounded-[2rem] p-6 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all text-slate-900 shadow-sm h-60 resize-none leading-relaxed"></textarea>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="addToQueue()"
+                            class="py-5 bg-white border border-slate-200 text-slate-900 rounded-[2rem] text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:border-slate-300 hover:shadow-md active:scale-95">
+                            <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+                            Schedule
+                        </button>
+                        <button onclick="publishNow()"
+                            class="py-5 bg-blue-600 text-white rounded-[2rem] text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/20 hover:bg-blue-700 active:scale-95">
+                            <i data-lucide="send" class="w-4 h-4 text-blue-200"></i>
+                            Post Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHOTO TAB (Manual Post) -->
+            <div id="content-photo" class="tab-content animate-fade-in text-center py-20 space-y-8">
+                <div class="w-32 h-32 bg-blue-50 rounded-full flex items-center justify-center mx-auto relative">
+                    <div class="absolute inset-0 bg-blue-100 rounded-full scale-110 opacity-20 animate-pulse"></div>
+                    <i data-lucide="image" class="w-12 h-12 text-blue-600 relative z-10"></i>
+                </div>
+                <div class="space-y-4 max-w-xs mx-auto">
+                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">Manual Image Post</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">Upload media, use the Image Generator, and craft
+                        your custom story.</p>
+                    <a href="/manual_post_screen"
+                        class="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-[2rem] text-[11px] font-extrabold uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all mt-4">
+                        Image Studio <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- VIDEO TAB (Video Creator) -->
+            <div id="content-video" class="tab-content animate-fade-in text-center py-20 space-y-8">
+                <div class="w-32 h-32 bg-red-50 rounded-full flex items-center justify-center mx-auto relative">
+                    <div class="absolute inset-0 bg-red-100 rounded-full scale-110 opacity-20 animate-pulse"></div>
+                    <i data-lucide="clapperboard" class="w-12 h-12 text-red-600 relative z-10"></i>
+                </div>
+                <div class="space-y-4 max-w-xs mx-auto">
+                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">AI Video Studio</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">Create viral shorts, reels, and stories with AI
+                        voices and templates.</p>
+                    <a href="/video_creator_screen"
+                        class="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-[2rem] text-[11px] font-extrabold uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all mt-4">
+                        Video Studio <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <!-- AI Model Dropdown -->
+    <div id="model-dropdown"
+        class="hidden fixed inset-x-4 bottom-32 z-[60] bg-white border border-slate-200 rounded-[2rem] shadow-2xl p-4 animate-fade-in max-h-[60vh] overflow-y-auto scrollbar-hide container mx-auto max-w-2xl">
+        <div class="flex items-center justify-between mb-4 px-2 pt-2">
+            <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Select AI Brain</h3>
+            <button onclick="toggleModelDropdown()" class="text-slate-400 hover:text-slate-900 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="model-list" class="space-y-2">
+            <!-- Models injected here -->
+        </div>
+    </div>
+
+    <!-- Toast UI -->
+    <div id="toast"
+        class="fixed bottom-32 left-8 right-8 z-[70] bg-slate-900 text-white p-5 rounded-[2rem] shadow-2xl flex items-center gap-4 translate-y-40 transition-transform duration-500 container mx-auto max-w-2xl">
+        <div id="toast-icon" class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+            <i data-lucide="check" class="w-5 h-5"></i>
+        </div>
+        <div>
+            <p id="toast-msg" class="text-sm font-extrabold tracking-tight"></p>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'text';
+        let aiModels = [];
+        let selectedModelId = null;
+
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+
+        async function init() {
+            highlightActiveTab();
+            await fetchAiModels();
+        }
+
+        async function fetchAiModels() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                aiModels = data.ai_configs || [];
+                renderModelList();
+                if (aiModels.length > 0) {
+                    selectModel(aiModels[0].id);
+                } else {
+                    document.getElementById('selected-model-name').innerText = "No Assistants Found";
+                }
+            } catch (e) {
+                console.error("AI fetch fail", e);
+                document.getElementById('selected-model-name').innerText = "Fetch Error";
+            }
+        }
+
+        function renderModelList() {
+            const list = document.getElementById('model-list');
+            list.innerHTML = aiModels.map(m => `
+                <div onclick="selectModel('${m.id}')" 
+                    class="p-4 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50 hover:border-blue-500/20 transition-all ${selectedModelId === m.id ? 'bg-blue-50 border-blue-500/20' : 'bg-white'} group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-900 group-hover:scale-110 transition-transform">
+                            <i data-lucide="bot" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-extrabold text-slate-900">${m.configName}</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${m.provider} • ${m.model}</p>
+                        </div>
+                    </div>
+                    ${selectedModelId === m.id ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-blue-600"></i>' : '<i data-lucide="chevron-right" class="w-5 h-5 text-slate-200"></i>'}
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function selectModel(id) {
+            selectedModelId = id;
+            const m = aiModels.find(item => item.id === id);
+            if (m) {
+                document.getElementById('selected-model-name').innerText = m.configName;
+                document.getElementById('model-dropdown').classList.add('hidden');
+            }
+            renderModelList();
+        }
+
+        function toggleModelDropdown() {
+            document.getElementById('model-dropdown').classList.toggle('hidden');
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`content-${mode}`).classList.add('active');
+
+            ['text', 'photo', 'video'].forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                const active = m === mode;
+                btn.className = `flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${active ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-400 hover:bg-white uppercase'}`;
+            });
+            lucide.createIcons();
+        }
+
+        async function generatePost() {
+            const input = document.getElementById('prompt-input').value;
+            if (!input) return showToast("Please enter some context or keywords.", "error");
+            if (!selectedModelId) return showToast("Please select an AI Assistant first.", "error");
+
+            const btn = document.getElementById('btn-generate');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> GENERATING...`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/ai/draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: input, configId: selectedModelId })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success' || data.content) {
+                    document.getElementById('generated-output').value = data.content || data.result;
+                    document.getElementById('output-area').classList.remove('hidden');
+                    showToast("Draft generated!", "success");
+                    // Scroll to output
+                    document.getElementById('output-area').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showToast("Generation failed.", "error");
+                }
+            } catch (e) {
+                showToast("Connection failed.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                lucide.createIcons();
+            }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('generated-output').value;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("Copied to clipboard!", "success");
+            });
+        }
+
+        async function addToQueue() {
+            const content = document.getElementById('generated-output').value;
+            if (!content) return;
+            // Similar to manual_post_screen, we'd add to queue
+            // For now simulate
+            showToast("Added to scheduled queue!", "success");
+        }
+
+        async function publishNow() {
+            const content = document.getElementById('generated-output').value;
+            if (!content) return;
+            showToast("Publishing now...", "success");
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            const icon = document.querySelector('#toast-icon i');
+
+            if (type === 'success') {
+                toast.classList.remove('bg-red-900');
+                toast.classList.add('bg-slate-900');
+                icon.setAttribute('data-lucide', 'check');
+            } else {
+                toast.classList.add('bg-red-900');
+                icon.setAttribute('data-lucide', 'alert-circle');
+            }
+
+            toast.classList.remove('translate-y-40');
+            lucide.createIcons();
+            setTimeout(() => toast.classList.add('translate-y-40'), 3000);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs Queue | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="dark-mode">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <i data-lucide="zap" class="logo-icon"></i>
+                <h2>Nexus ASM</h2>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="/dashboard" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                <a href="/compose" class="nav-item"><i data-lucide="pen-tool"></i> Compose</a>
+                <a href="/video-maker" class="nav-item"><i data-lucide="clapperboard"></i> Video Maker</a>
+                <a href="/jobs" class="nav-item active"><i data-lucide="list"></i> Jobs Queue</a>
+                <a href="/assistants" class="nav-item"><i data-lucide="users"></i> Assistants</a>
+                <a href="/settings" class="nav-item"><i data-lucide="settings"></i> Settings</a>
+                <a href="/logs" class="nav-item"><i data-lucide="terminal"></i> Server Logs</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content-area">
+            <header class="view-header">
+                <h1>Job Queue</h1>
+                <button class="btn-refresh" onclick="loadJobs()"><i data-lucide="refresh-cw"></i></button>
+            </header>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Scheduled At</th>
+                            <th>Attempts</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-table-body">
+                        <!-- JS populates this -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', loadJobs);
+    </script>
+</body>
+
+</html>

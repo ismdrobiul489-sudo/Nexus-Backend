@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Flow Builder | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#101622',
+                            card: '#1C1E21',
+                            border: '#3b4354'
+                        },
+                        primary: '#1877F2'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-50 dark:bg-[#101622] text-gray-900 dark:text-white h-screen flex flex-col font-['Inter'] overflow-hidden">
+
+    <!-- Header -->
+    <header
+        class="bg-white dark:bg-[#1C1E21] px-4 py-3 shadow-sm border-b border-gray-100 dark:border-[#3b4354] sticky top-0 z-40">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/home_screen"
+                    class="p-1.5 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
+                </a>
+                <div>
+                    <h1 id="page-title" class="text-lg font-bold leading-tight">New Assistant</h1>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Flow Wizard</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
+                <div id="step-dots" class="flex gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-purple-600"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="h-1 bg-gray-100 dark:bg-gray-800 w-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-purple-600 transition-all duration-500 w-[25%]"></div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 pb-32">
+        <div class="max-w-2xl mx-auto space-y-6">
+
+            <!-- Step Label -->
+            <div class="animate-fade-in">
+                <span id="step-label-top" class="text-blue-500 text-[10px] font-bold tracking-widest uppercase">Step 1
+                    of 4</span>
+                <h2 id="step-title" class="text-2xl font-bold mt-1">Identity</h2>
+            </div>
+
+            <!-- STEP 1: IDENTITY -->
+            <div id="step-1" class="step-content active animate-fade-in space-y-6">
+                <!-- Info Box -->
+                <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-3xl flex gap-4">
+                    <div class="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center shrink-0">
+                        <i data-lucide="settings" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-blue-500">Bot Identity</h4>
+                        <p class="text-xs text-blue-500/70 mt-0.5">Connect your assistant to a Facebook Page and an AI
+                            Brain.</p>
+                    </div>
+                </div>
+
+                <!-- Input Name -->
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Assistant
+                        Name</label>
+                    <input type="text" id="assistant-name" placeholder="e.g. Daily Motivation Bot"
+                        class="w-full p-4 bg-white dark:bg-[#1C1E21] border border-gray-100 dark:border-[#3b4354] rounded-2xl text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all">
+                </div>
+
+                <!-- Page Selector -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Target
+                        Account</label>
+                    <div id="page-list" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- AI Brain Selector -->
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">AI Brain
+                        (Provider)</label>
+                    <select id="ai-brain-select"
+                        class="w-full p-4 bg-white dark:bg-[#1C1E21] border border-gray-100 dark:border-[#3b4354] rounded-2xl text-sm font-medium outline-none appearance-none">
+                        <option value="">Default (System Key)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- STEP 2: SOURCE -->
+            <div id="step-2" class="step-content animate-fade-in space-y-6">
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Source
+                        Type</label>
+                    <div class="grid grid-cols-2 xs:grid-cols-3 gap-3">
+                        <button onclick="setSourceType('RSS')"
+                            class="source-card p-4 rounded-3xl border border-gray-100 dark:border-[#3b4354] bg-white dark:bg-[#1C1E21] flex flex-col items-center gap-2 group transition-all"
+                            data-type="RSS">
+                            <i data-lucide="rss" class="w-6 h-6 text-orange-500"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-tight">RSS Feed</span>
+                        </button>
+                        <button onclick="setSourceType('AI_TOPIC')"
+                            class="source-card p-4 rounded-3xl border border-gray-100 dark:border-[#3b4354] bg-white dark:bg-[#1C1E21] flex flex-col items-center gap-2 group transition-all"
+                            data-type="AI_TOPIC">
+                            <i data-lucide="lightbulb" class="w-6 h-6 text-yellow-500"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-tight">AI Topic</span>
+                        </button>
+                        <button onclick="setSourceType('VIDEO_AUTOMATION')"
+                            class="source-card p-4 rounded-3xl border border-gray-100 dark:border-[#3b4354] bg-white dark:bg-[#1C1E21] flex flex-col items-center gap-2 group transition-all"
+                            data-type="VIDEO_AUTOMATION">
+                            <i data-lucide="video" class="w-6 h-6 text-purple-500"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-tight">Video</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RSS SOURCE CONFIG -->
+                <div id="src-config-RSS" class="src-detail-box space-y-4">
+                    <div
+                        class="bg-white dark:bg-[#1C1E21] p-5 rounded-3xl border border-gray-100 dark:border-[#3b4354] shadow-xl shadow-black/5 space-y-4">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Feed
+                            Sources</label>
+                        <div id="rss-feed-list" class="space-y-2"></div>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-rss-url" placeholder="Paste RSS URL..."
+                                class="flex-1 p-3.5 bg-gray-50 dark:bg-gray-900 border border-transparent rounded-2xl text-xs outline-none focus:border-purple-500">
+                            <button onclick="addRssFeed()"
+                                class="p-3.5 bg-purple-600 text-white rounded-2xl shadow-lg shadow-purple-600/20 active:scale-95 transition-all">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI TOPIC SOURCE CONFIG -->
+                <div id="src-config-AI_TOPIC" class="src-detail-box hidden space-y-4">
+                    <div
+                        class="bg-white dark:bg-[#1C1E21] p-5 rounded-3xl border border-gray-100 dark:border-[#3b4354] space-y-5">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest">System
+                                Prompt (AI's Role)</label>
+                            <textarea id="ai-sys-prompt" rows="2" placeholder="You are a professional news analyst..."
+                                class="w-full p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-blue-500 resize-none font-medium"></textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-bold text-yellow-500 uppercase tracking-widest">Target
+                                Niche</label>
+                            <textarea id="ai-niche" rows="2" placeholder="e.g. Breaking Tech News, AI Developments"
+                                class="w-full p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-yellow-500 resize-none font-medium"></textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-bold text-green-500 uppercase tracking-widest">Constraints</label>
+                            <textarea id="ai-constraints" rows="2"
+                                placeholder="Keep it under 300 chars, use 3 hashtags..."
+                                class="w-full p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-green-500 resize-none font-medium"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIDEO SOURCE CONFIG -->
+                <div id="src-config-VIDEO_AUTOMATION" class="src-detail-box hidden space-y-4">
+                    <div
+                        class="bg-white dark:bg-[#1C1E21] p-5 rounded-3xl border border-gray-100 dark:border-[#3b4354] space-y-5">
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Video
+                                Module</label>
+                            <select id="video-module"
+                                class="w-full p-3.5 bg-gray-50 dark:bg-gray-900 rounded-2xl text-xs outline-none font-bold">
+                                <option value="short-video">Short Video (Cinematic)</option>
+                                <option value="story-reel">Story Reel (Narrative)</option>
+                                <option value="fact-image">Fact Image (Static AI)</option>
+                                <option value="quiz">Quiz Reel (Polls)</option>
+                                <option value="text-story">Text Story (Chat)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-bold text-purple-500 uppercase tracking-widest ml-1">Context
+                                / Description</label>
+                            <textarea id="video-context" rows="3"
+                                placeholder="Describe what the video should be about..."
+                                class="w-full p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-purple-500 resize-none font-medium"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: TRANSFORMATION -->
+            <div id="step-3" class="step-content animate-fade-in space-y-6">
+                <!-- Rewrite Policy -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Writing
+                        Policy</label>
+                    <div id="policy-list" class="space-y-3">
+                        <button onclick="setPolicy('RSS_AI_WRITE')"
+                            class="policy-card w-full p-5 rounded-3xl border border-gray-100 dark:border-[#3b4354] bg-white dark:bg-[#1C1E21] text-left hover:shadow-xl transition-all border-purple-500/50"
+                            data-policy="RSS_AI_WRITE">
+                            <h4 class="text-sm font-bold">AI Rewrite (High Quality)</h4>
+                            <p class="text-[10px] text-gray-500 font-medium">Summarizes articles for social engagement.
+                            </p>
+                        </button>
+                        <button onclick="setPolicy('AI_DIRECT')"
+                            class="policy-card w-full p-5 rounded-3xl border border-gray-100 dark:border-[#3b4354] bg-white dark:bg-[#1C1E21] text-left hover:shadow-xl transition-all hidden"
+                            data-policy="AI_DIRECT">
+                            <h4 class="text-sm font-bold">Direct Generation</h4>
+                            <p class="text-[10px] text-gray-500 font-medium">No external source, direct from AI brain.
+                            </p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hashtag Config -->
+                <div
+                    class="bg-white dark:bg-[#1C1E21] p-5 rounded-3xl border border-gray-100 dark:border-[#3b4354] shadow-xl shadow-black/5 space-y-4">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Hashtag
+                        Strategy</label>
+                    <div class="flex p-1.5 bg-gray-100 dark:bg-gray-800 rounded-2xl gap-1">
+                        <button onclick="setHashtagMode('AUTO')"
+                            class="hashtag-btn flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-gray-700 shadow-lg text-purple-600 dark:text-purple-400"
+                            data-mode="AUTO">Auto</button>
+                        <button onclick="setHashtagMode('FIXED')"
+                            class="hashtag-btn flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400"
+                            data-mode="FIXED">Fixed</button>
+                    </div>
+                    <div id="fixed-hashtag-box" class="hidden animate-fade-in">
+                        <input type="text" id="fixed-hashtags" placeholder="#Tech #Innovation #Daily"
+                            class="w-full p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl text-xs outline-none font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4: SCHEDULE -->
+            <div id="step-4" class="step-content animate-fade-in space-y-6">
+                <!-- Mode Selector (RSS vs AI) -->
+                <div id="rss-sch-info"
+                    class="bg-orange-500/10 border border-orange-500/20 p-6 rounded-3xl flex flex-col items-center text-center space-y-3">
+                    <div
+                        class="w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                        <i data-lucide="zap" class="w-7 h-7"></i>
+                    </div>
+                    <h4 class="text-lg font-bold text-orange-500 uppercase tracking-tighter">Event-Driven Active</h4>
+                    <p class="text-xs text-orange-500/70 max-w-[250px]">RSS Assistants monitor feeds every 5 minutes and
+                        post new content immediately.</p>
+                </div>
+
+                <div id="ai-sch-config" class="hidden space-y-6">
+                    <div
+                        class="bg-white dark:bg-[#1C1E21] p-6 rounded-3xl border border-gray-100 dark:border-[#3b4354] space-y-6 overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Daily Posting
+                                Times</label>
+                            <button onclick="addTimeSlot()"
+                                class="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl text-[10px] font-bold uppercase border border-purple-500/20">Add
+                                Slot</button>
+                        </div>
+                        <div id="time-list" class="space-y-3 max-h-64 overflow-y-auto pr-1 scrollbar-hide">
+                            <!-- Time items populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiet Hours -->
+                <div
+                    class="bg-white dark:bg-[#1C1E21] p-6 rounded-3xl border border-gray-100 dark:border-[#3b4354] flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-11 h-11 bg-indigo-500/10 rounded-2xl flex items-center justify-center">
+                            <i data-lucide="moon" class="w-5 h-5 text-indigo-500"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold">Quiet Hours</h4>
+                            <p class="text-[10px] font-medium text-gray-500">Stop posting during nighttime.</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleQuietHours()" id="quiet-toggle"
+                        class="w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700 relative p-1 transition-colors">
+                        <div class="w-4 h-4 bg-white rounded-full transition-all"></div>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer Actions -->
+    <footer
+        class="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-[#1C1E21]/80 backdrop-blur-xl border-t border-gray-100 dark:border-[#3b4354] p-5 pb-8 z-50">
+        <div class="max-w-2xl mx-auto flex gap-4">
+            <button onclick="goBack()"
+                class="flex-1 py-4 text-gray-500 font-bold uppercase tracking-widest text-xs border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all">Back</button>
+            <button id="next-btn" onclick="goNext()"
+                class="flex-[2] py-4 bg-purple-600 text-white font-bold uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-purple-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <span>Continue</span>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        let currentStep = 1;
+        let config = {
+            id: Date.now().toString(),
+            name: '',
+            sourceType: 'RSS',
+            targetPageIds: [],
+            aiConfigId: '',
+            rssFeeds: [],
+            rewritePolicy: 'RSS_AI_WRITE',
+            hashtagStrategy: 'AUTO',
+            fixedTimes: ['09:00'],
+            quietHours: false,
+            videoModule: 'short-video',
+            niche: '',
+            systemPrompt: '',
+            constraints: ''
+        };
+
+        let pages = [];
+        let aiBrainConfigs = [];
+
+        async function init() {
+            lucide.createIcons();
+            await fetchInitialData();
+            renderPages();
+            renderAiBrains();
+
+            // Check if editing
+            const urlParams = new URLSearchParams(window.location.search);
+            const editId = urlParams.get('id');
+            if (editId) {
+                await loadAssistant(editId);
+            }
+        }
+
+        async function fetchInitialData() {
+            try {
+                const [settingsRes, assistantsRes] = await Promise.all([
+                    fetch('/api/settings'),
+                    fetch('/api/assistants')
+                ]);
+                const settings = await settingsRes.json();
+                pages = settings.socialMediaAccounts || [];
+                // aiBrainConfigs are embedded in settings logic or separate?
+                // For now use mock or fetch if separate endpoint exists
+            } catch (e) {
+                console.error("Fetch error", e);
+            }
+        }
+
+        function renderPages() {
+            const container = document.getElementById('page-list');
+            if (!pages.length) {
+                container.innerHTML = `<p class="text-[10px] text-red-500 font-bold p-3 bg-red-500/5 rounded-2xl">No accounts connected. Go to Settings.</p>`;
+                return;
+            }
+            container.innerHTML = pages.map(p => `
+                <div onclick="togglePageSelection('${p.pageId || p.id}')" class="page-card p-4 rounded-2xl border border-gray-100 dark:border-[#3b4354] bg-white dark:bg-[#1C1E21] flex items-center justify-between cursor-pointer transition-all hover:border-purple-500/50 ${config.targetPageIds.includes(p.pageId || p.id) ? 'border-purple-600 bg-purple-50/5' : ''}" data-id="${p.pageId || p.id}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs ${p.platform === 'FACEBOOK' ? 'bg-blue-600' : 'bg-red-600'}">
+                            ${p.platform.charAt(0)}
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold">${p.accountName}</h4>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-widest">${p.platform}</p>
+                        </div>
+                    </div>
+                    <div class="selection-indicator w-5 h-5 rounded-full border-2 ${config.targetPageIds.includes(p.pageId || p.id) ? 'bg-purple-600 border-purple-600' : 'border-gray-200 dark:border-gray-700'} flex items-center justify-center">
+                        ${config.targetPageIds.includes(p.pageId || p.id) ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function togglePageSelection(id) {
+            const idx = config.targetPageIds.indexOf(id);
+            if (idx > -1) config.targetPageIds.splice(idx, 1);
+            else config.targetPageIds.push(id);
+            renderPages();
+        }
+
+        function renderAiBrains() {
+            // Mocking for now, in real it should fetch aiConfigs
+            const select = document.getElementById('ai-brain-select');
+            // Mock fallback
+        }
+
+        function setSourceType(type) {
+            config.sourceType = type;
+            document.querySelectorAll('.source-card').forEach(btn => {
+                const isActive = btn.dataset.type === type;
+                btn.classList.toggle('border-purple-600', isActive);
+                btn.classList.toggle('bg-purple-50/5', isActive);
+            });
+
+            // Toggle sub-configs
+            document.querySelectorAll('.src-detail-box').forEach(box => box.classList.add('hidden'));
+            document.getElementById(`src-config-${type}`).classList.remove('hidden');
+
+            // Adjust next step logic (e.g. video might skip step 3 in some versions, but we'll follow mobile)
+            if (type === 'AI_TOPIC') {
+                config.rewritePolicy = 'AI_DIRECT';
+            } else if (type === 'VIDEO_AUTOMATION') {
+                config.rewritePolicy = 'NONE';
+            } else {
+                config.rewritePolicy = 'RSS_AI_WRITE';
+            }
+        }
+
+        function goNext() {
+            if (currentStep === 1) {
+                config.name = document.getElementById('assistant-name').value;
+                if (!config.name || !config.targetPageIds.length) {
+                    alert("Please fill name and select a page.");
+                    return;
+                }
+            }
+
+            if (currentStep < 4) {
+                currentStep++;
+                updateWizardState();
+            } else {
+                saveFlow();
+            }
+        }
+
+        function goBack() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateWizardState();
+            } else {
+                window.location.href = '/home_screen';
+            }
+        }
+
+        function updateWizardState() {
+            // Update UI
+            document.querySelectorAll('.step-content').forEach((s, idx) => {
+                s.classList.toggle('active', (idx + 1) === currentStep);
+            });
+
+            const steps = ['Identity', 'Source', 'Transformation', 'Schedule'];
+            document.getElementById('step-title').innerText = steps[currentStep - 1];
+            document.getElementById('step-label-top').innerText = `Step ${currentStep} of 4`;
+
+            // dots
+            const dots = document.getElementById('step-dots').children;
+            for (let i = 0; i < 4; i++) {
+                dots[i].classList.toggle('bg-purple-600', (i + 1) <= currentStep);
+                dots[i].classList.toggle('bg-gray-300', (i + 1) > currentStep);
+            }
+
+            document.getElementById('progress-bar').style.width = `${(currentStep / 4) * 100}%`;
+
+            const nextBtnText = currentStep === 4 ? 'Save Flow' : 'Continue';
+            document.getElementById('next-btn').querySelector('span').innerText = nextBtnText;
+
+            if (currentStep === 3) prepareStep3();
+            if (currentStep === 4) prepareStep4();
+
+            lucide.createIcons();
+        }
+
+        function prepareStep3() {
+            document.querySelectorAll('.policy-card').forEach(c => {
+                const p = c.dataset.policy;
+                if (config.sourceType === 'RSS') {
+                    c.classList.toggle('hidden', !p.startsWith('RSS'));
+                } else {
+                    c.classList.toggle('hidden', p !== 'AI_DIRECT' && p !== 'NONE');
+                }
+            });
+            updatePolicyUI();
+        }
+
+        function setPolicy(p) {
+            config.rewritePolicy = p;
+            updatePolicyUI();
+        }
+
+        function updatePolicyUI() {
+            document.querySelectorAll('.policy-card').forEach(c => {
+                const active = c.dataset.policy === config.rewritePolicy;
+                c.classList.toggle('border-purple-600', active);
+                c.classList.toggle('bg-purple-50/10', active);
+            });
+        }
+
+        function setHashtagMode(m) {
+            config.hashtagStrategy = m;
+            document.querySelectorAll('.hashtag-btn').forEach(b => {
+                const active = b.dataset.mode === m;
+                b.classList.toggle('bg-white', active);
+                b.classList.toggle('dark:bg-gray-700', active);
+                b.classList.toggle('shadow-lg', active);
+                b.classList.toggle('text-purple-600', active);
+                b.classList.remove('text-gray-400');
+                if (!active) b.classList.add('text-gray-400');
+            });
+            document.getElementById('fixed-hashtag-box').classList.toggle('hidden', m !== 'FIXED');
+        }
+
+        function prepareStep4() {
+            const isRSS = config.sourceType === 'RSS';
+            document.getElementById('rss-sch-info').classList.toggle('hidden', !isRSS);
+            document.getElementById('ai-sch-config').classList.toggle('hidden', isRSS);
+
+            if (!isRSS) renderTimeList();
+        }
+
+        function renderTimeList() {
+            const container = document.getElementById('time-list');
+            container.innerHTML = config.fixedTimes.map((t, idx) => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 border border-transparent rounded-2xl group transition-all">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="clock" class="w-4 h-4 text-gray-400"></i>
+                        <span class="text-sm font-bold font-mono tracking-tight">${t}</span>
+                    </div>
+                    <button onclick="removeTime(${idx})" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function addTimeSlot() {
+            const time = prompt("Enter time (HH:MM):", "09:00");
+            if (time && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+                config.fixedTimes.push(time);
+                config.fixedTimes.sort();
+                renderTimeList();
+            } else if (time) alert("Invalid time format.");
+        }
+
+        function removeTime(idx) {
+            config.fixedTimes.splice(idx, 1);
+            renderTimeList();
+        }
+
+        function toggleQuietHours() {
+            config.quietHours = !config.quietHours;
+            const btn = document.getElementById('quiet-toggle');
+            const dot = btn.querySelector('div');
+            btn.classList.toggle('bg-indigo-500', config.quietHours);
+            btn.classList.toggle('bg-gray-200', !config.quietHours);
+            dot.classList.toggle('translate-x-6', config.quietHours);
+        }
+
+        // RSS Logic
+        function addRssFeed() {
+            const url = document.getElementById('new-rss-url').value;
+            if (!url) return;
+            config.rssFeeds.push({ url, label: new URL(url).hostname });
+            document.getElementById('new-rss-url').value = '';
+            renderRssFeeds();
+        }
+
+        function renderRssFeeds() {
+            const container = document.getElementById('rss-feed-list');
+            container.innerHTML = config.rssFeeds.map((f, i) => `
+                <div class="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-transparent">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i data-lucide="rss" class="w-4 h-4 text-orange-500"></i>
+                        <span class="text-xs font-bold truncate">${f.label}</span>
+                    </div>
+                    <button onclick="removeRss(${i})" class="p-2 text-gray-400 hover:text-red-500">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function removeRss(i) {
+            config.rssFeeds.splice(i, 1);
+            renderRssFeeds();
+        }
+
+        async function saveFlow() {
+            const btn = document.getElementById('next-btn');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Saving...`;
+
+            // Assemble final structured data for API
+            const payload = {
+                ...config,
+                aiTopicPrompt: config.sourceType === 'AI_TOPIC' ? `SYSTEM PROMPT: ${document.getElementById('ai-sys-prompt').value}\n---\nTOPIC: ${document.getElementById('ai-niche').value}\n---\nCONSTRAINTS: ${document.getElementById('ai-constraints').value}` : '',
+                videoAutomationConfig: config.sourceType === 'VIDEO_AUTOMATION' ? {
+                    module: document.getElementById('video-module').value,
+                    niche: document.getElementById('ai-niche').value || 'Video Automation', // reuse niche if available or context
+                    nicheDetails: document.getElementById('video-context').value
+                } : null
+            };
+
+            try {
+                const res = await fetch('/api/assistants', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) window.location.href = '/home_screen';
+                else alert("Save failed.");
+            } catch (e) {
+                alert("Error saving.");
+            } finally {
+                btn.innerText = 'Save Flow';
+                lucide.createIcons();
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

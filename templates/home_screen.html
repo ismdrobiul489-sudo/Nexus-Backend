@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Home | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1877F2'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+
+        /* Toast Styles */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            min-width: 300px;
+            max-width: 400px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: currentColor;
+            width: 100%;
+            animation: toast-progress 5s linear forwards;
+        }
+
+        @keyframes slide-in-right {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toast-progress {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+
+        .toast.hiding {
+            animation: slide-out-right 0.3s ease-in forwards;
+        }
+
+        @keyframes slide-out-right {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 h-screen flex flex-col font-['Inter'] overflow-hidden">
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Header -->
+    <header class="bg-white px-6 py-5 border-b border-slate-200 sticky top-0 z-40">
+        <div class="container mx-auto flex items-center justify-between font-['Inter']">
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Nexus ASM</h1>
+                <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-green-600 uppercase tracking-widest">Online</span>
+                </div>
+            </div>
+            <button onclick="refreshHomeData()"
+                class="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-blue-600 active:scale-90">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 pb-32 scrollbar-hide">
+        <div class="container mx-auto lg:max-w-4xl space-y-6">
+
+            <!-- Background Countdown Card -->
+            <div class="bg-white border border-blue-100 rounded-3xl p-6 animate-fade-in shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                            <i data-lucide="clock" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Next Check In
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">
+                                Scheduled at: <span id="next-check-time" class="text-slate-900 font-bold">--:--</span>
+                            </p>
+                        </div>
+                    </div>
+                    <span id="countdown-timer" class="text-4xl font-mono font-bold text-blue-600 tabular-nums">
+                        00m 00s
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Navigation Cards -->
+                <div class="space-y-3">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Tools & Logs</h2>
+                    <a href="/execution_logs_screen"
+                        class="w-full bg-white border border-slate-200 rounded-3xl p-5 flex items-center justify-between group hover:border-blue-500 hover:shadow-md transition-all active:scale-[0.98]">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-slate-900 font-bold text-sm">Execution Logs</h3>
+                                <p class="text-[11px] text-slate-500 font-medium">Job success, failures & delays</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right"
+                            class="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors"></i>
+                    </a>
+
+                    <a href="/file_manager_screen"
+                        class="w-full bg-white border border-slate-200 rounded-3xl p-5 flex items-center justify-between group hover:border-purple-500 hover:shadow-md transition-all active:scale-[0.98]">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                <i data-lucide="hard-drive" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-slate-900 font-bold text-sm">File Manager</h3>
+                                <p class="text-[11px] text-slate-500 font-medium">HuggingFace storage files</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right"
+                            class="w-5 h-5 text-slate-300 group-hover:text-purple-500 transition-colors"></i>
+                    </a>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="space-y-3">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Performance</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                            <p id="stat-posted" class="text-2xl font-bold text-slate-900 mb-0.5">0</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Posted Today</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                            <p id="stat-pending" class="text-2xl font-bold text-slate-900 mb-0.5">0</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">In Queue</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                            <p id="stat-success" class="text-2xl font-bold text-slate-900 mb-0.5">0%</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Success Rate</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                            <p id="stat-next" class="text-2xl font-bold text-slate-900 mb-0.5">--:--</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Next Post</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold flex items-center gap-2 text-slate-900">
+                    <i data-lucide="activity" class="w-5 h-5 text-slate-400"></i>
+                    Recent Activity
+                </h2>
+                <div id="recent-logs" class="space-y-3">
+                    <div class="p-8 bg-white rounded-3xl border border-slate-200 animate-pulse h-24 shadow-sm"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FAB -->
+    <a href="/generator_screen"
+        class="fixed bottom-28 right-6 w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 hover:scale-110 active:scale-95 transition-all z-50">
+        <i data-lucide="plus" class="text-white w-7 h-7"></i>
+    </a>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+    </script>
+
+    <script>
+        async function refreshHomeData() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+
+                // Update Metrics
+                document.getElementById('stat-pending').innerText = data.pending_jobs || 0;
+                document.getElementById('stat-posted').innerText = data.total_posts || 0;
+                document.getElementById('stat-success').innerText = (data.success_rate || 0) + '%';
+                document.getElementById('stat-next').innerText = data.next_post_time || '--:--';
+
+                // Logs
+                const logsContainer = document.getElementById('recent-logs');
+                if (data.recent_logs && data.recent_logs.length > 0) {
+                    logsContainer.innerHTML = data.recent_logs.map(log => `
+                        <div class="flex items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm animate-fade-in">
+                            <div class="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-50">
+                                <i data-lucide="${getLogIcon(log.status)}" class="${getLogColor(log.status)} w-5 h-5"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <h4 class="font-bold text-sm text-slate-900 truncate pr-2">${log.title}</h4>
+                                    <span class="text-[9px] px-2 py-0.5 rounded-full border font-bold tracking-widest ${getStatusChip(log.status)}">
+                                        ${log.status}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 font-medium truncate">${log.details}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">${log.time || 'Now'}</p>
+                                <div class="mt-1 px-1.5 py-0.5 rounded bg-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                    ${log.destination || 'FB'}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    logsContainer.innerHTML = `
+                        <div class="text-center py-10 bg-white rounded-3xl border border-slate-200">
+                            <i data-lucide="clock" class="mx-auto mb-2 opacity-20 w-8 h-8"></i>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">No activity found</p>
+                        </div>`;
+                }
+                lucide.createIcons();
+
+                // Mock Countdown logic matching backgroundService.ts / getTimeToNextCheck
+                updateCountdown();
+            } catch (e) {
+                console.error("Home Data Fetch Error", e);
+            }
+        }
+
+        function getLogIcon(status) {
+            return status === 'SUCCESS' ? 'check-circle' : (status === 'QUEUED' ? 'clock' : 'alert-circle');
+        }
+        function getLogColor(status) {
+            return status === 'SUCCESS' ? 'text-green-500' : (status === 'QUEUED' ? 'text-orange-400' : 'text-red-500');
+        }
+        function getStatusChip(status) {
+            if (status === 'SUCCESS') return 'bg-green-500/10 text-green-500 border-green-500/20';
+            if (status === 'QUEUED') return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+            return 'bg-red-500/10 text-red-500 border-red-500/20';
+        }
+
+        function updateCountdown() {
+            // Mobile app uses a global service to track this. 
+            // In web, we simulate or fetch from a background status endpoint.
+            const now = new Date();
+            const nextCheck = new Date(Math.ceil(now.getTime() / 300000) * 300000); // Snap to next 5 min
+            const msRemaining = nextCheck.getTime() - now.getTime();
+
+            const minutes = Math.floor(msRemaining / 60000);
+            const seconds = Math.floor((msRemaining % 60000) / 1000);
+
+            document.getElementById('countdown-timer').innerText = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            document.getElementById('next-check-time').innerText = nextCheck.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        setInterval(updateCountdown, 1000);
+
+        // --- NOTIFICATION POLLING ---
+        async function checkNotifications() {
+            try {
+                const res = await fetch('/api/notifications?unread=true');
+                const notifications = await res.json();
+
+                if (notifications && notifications.length > 0) {
+                    notifications.forEach(n => showToast(n));
+                    // Mark as read after showing
+                    await fetch('/api/notifications/clear', { method: 'POST' });
+                }
+            } catch (e) {
+                console.error("Notification Fetch Error", e);
+            }
+        }
+
+        function showToast(notification) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${notification.type}`;
+
+            const colors = {
+                success: 'text-green-500',
+                error: 'text-red-500',
+                warning: 'text-orange-400',
+                info: 'text-blue-500'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'alert-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+
+            const color = colors[notification.type] || colors.info;
+            const icon = icons[notification.type] || icons.info;
+
+            toast.innerHTML = `
+                <div class="${color} shrink-0 mt-0.5">
+                    <i data-lucide="${icon}" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h5 class="font-bold text-sm text-slate-900 mb-0.5">${notification.title}</h5>
+                    <p class="text-[11px] text-slate-500 font-medium leading-relaxed">${notification.body}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons({ props: { "stroke-width": 2.5 } });
+
+            // Auto-dismiss
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 3000);
+            }, 5000);
+        }
+
+        setInterval(checkNotifications, 10000); // Check every 10s
+        checkNotifications(); // Initial check
+
+        document.addEventListener('DOMContentLoaded', refreshHomeData);
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

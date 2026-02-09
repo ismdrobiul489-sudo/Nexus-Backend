@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Connect Facebook | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#101622',
+                            card: '#1C1E21',
+                            border: '#3b4354'
+                        },
+                        primary: '#1877F2'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body
+    class="bg-white dark:bg-[#101622] text-gray-900 dark:text-white h-screen flex flex-col items-center justify-center p-6 pb-24 font-['Inter']">
+
+    <!-- Icon Container (Matches FacebookConnectScreen.tsx) -->
+    <div class="bg-blue-600 p-6 rounded-full mb-6 shadow-xl animate-in zoom-in duration-500">
+        <i data-lucide="facebook" class="text-white w-12 h-12"></i>
+    </div>
+
+    <!-- Content -->
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Connect Page</h2>
+    <p class="text-gray-500 dark:text-gray-400 text-center mb-8 max-w-xs text-sm leading-relaxed">
+        To enable publishing, please enter your Facebook Page ID and Access Token in the Settings menu.
+    </p>
+
+    <!-- Action Button -->
+    <a href="/settings_screen"
+        class="bg-gray-900 dark:bg-white dark:text-gray-900 text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 decoration-none">
+        Open Settings <i data-lucide="arrow-right" class="w-[18px]"></i>
+    </a>
+
+    <!-- Note Box (Matches parity) -->
+    <div
+        class="mt-10 bg-blue-50 dark:bg-blue-900/10 p-5 rounded-2xl text-[11px] text-blue-800 dark:text-blue-300 max-w-xs border border-blue-100 dark:border-blue-800/50 leading-normal">
+        <strong class="font-bold">Note:</strong> For this V1 Basic version, you must manually generate a Page Access
+        Token via the Facebook Graph API Explorer and paste it into Settings.
+    </div>
+
+    <!-- Bottom Nav Placeholder (Matches App feel) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1C1E21] border-t border-gray-100 dark:border-[#3b4354] px-6 py-3 flex justify-between items-center z-50">
+        <a href="/home_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Home</span>
+        </a>
+        <a href="/automation_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="bot" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Auto</span>
+        </a>
+        <a href="/rss_feed_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="rss" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">RSS</span>
+        </a>
+        <a href="/generator_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Create</span>
+        </a>
+        <a href="/settings_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="settings" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

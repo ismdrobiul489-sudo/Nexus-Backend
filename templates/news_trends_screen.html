@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>News Trends - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-[#101622] text-white font-['Inter'] min-h-screen pb-32">
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-[#1C1E21]/80 backdrop-blur-md border-b border-[#3b4354] px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/home_screen" class="p-2 hover:bg-[#2A2A2A] rounded-full transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">News Trends</h1>
+                <p class="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5 font-bold uppercase tracking-widest">
+                    <i data-lucide="globe" class="w-3 h-3"></i>
+                    Powered by NewsData.io
+                </p>
+            </div>
+        </div>
+        <button onclick="fetchTrends()" id="btn-refresh"
+            class="p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-900/20">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
+    </header>
+
+    <main class="px-4 py-6 max-w-2xl mx-auto space-y-6">
+        <!-- Status & Last Updated -->
+        <div id="status-bar"
+            class="hidden flex items-center justify-between bg-[#1C1E21] p-3 rounded-2xl border border-[#3b4354]">
+            <span class="text-xs text-gray-400 font-medium">Last updated</span>
+            <span id="last-updated" class="text-xs text-blue-400 font-bold">--:--</span>
+        </div>
+
+        <!-- Error Container -->
+        <div id="error-container"
+            class="hidden bg-red-900/20 border border-red-500/50 p-4 rounded-2xl flex items-center gap-3">
+            <i data-lucide="alert-circle" class="text-red-400 w-5 h-5"></i>
+            <p id="error-text" class="text-xs text-red-100"></p>
+        </div>
+
+        <!-- Articles List -->
+        <div id="articles-list" class="space-y-4">
+            <!-- Loading Skeletons -->
+            <div class="animate-pulse space-y-4">
+                <div class="h-48 bg-[#1C1E21] rounded-2xl border border-[#3b4354]"></div>
+                <div class="h-48 bg-[#1C1E21] rounded-2xl border border-[#3b4354]"></div>
+                <div class="h-48 bg-[#1C1E21] rounded-2xl border border-[#3b4354]"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-[#1C1E21] border-t border-[#3b4354] px-6 py-3 flex justify-between items-center z-50">
+        <a href="/home_screen" class="flex flex-col items-center gap-1 text-gray-500">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px]">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="flex flex-col items-center gap-1 text-gray-500">
+            <i data-lucide="rss" class="w-6 h-6"></i>
+            <span class="text-[10px]">RSS</span>
+        </a>
+        <a href="/news_trends_screen" class="flex flex-col items-center gap-1 text-blue-500">
+            <i data-lucide="trending-up" class="w-6 h-6"></i>
+            <span class="text-[10px]">Trends</span>
+        </a>
+        <a href="/generator_screen" class="flex flex-col items-center gap-1 text-gray-500">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+            <span class="text-[10px]">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="flex flex-col items-center gap-1 text-gray-500">
+            <i data-lucide="bot" class="w-6 h-6"></i>
+            <span class="text-[10px]">Assistants</span>
+        </a>
+    </nav>
+
+    <script>
+        let articles = [];
+
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMins / 60);
+                const diffDays = Math.floor(diffHours / 24);
+
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            } catch {
+                return 'Recently';
+            }
+        }
+
+        async function fetchTrends() {
+            const list = document.getElementById('articles-list');
+            const btn = document.getElementById('btn-refresh');
+            const errorContainer = document.getElementById('error-container');
+
+            btn.classList.add('animate-spin');
+            errorContainer.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/news/trends');
+                const data = await res.json();
+
+                if (data.status === 'error' || !data.results) {
+                    throw new Error(data.message || 'Failed to load trends');
+                }
+
+                articles = data.results;
+                renderArticles();
+
+                document.getElementById('status-bar').classList.remove('hidden');
+                document.getElementById('last-updated').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                console.error(e);
+                errorContainer.classList.remove('hidden');
+                document.getElementById('error-text').innerText = e.message;
+            } finally {
+                btn.classList.remove('animate-spin');
+            }
+        }
+
+        function renderArticles() {
+            const list = document.getElementById('articles-list');
+
+            if (articles.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-20 opacity-30">
+                        <i data-lucide="trending-up" class="w-16 h-16 mx-auto mb-4"></i>
+                        <p class="font-bold">No trends found right now</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            list.innerHTML = articles.map(article => `
+                <div class="bg-[#1C1E21] rounded-2xl border border-[#3b4354] overflow-hidden hover:border-blue-500/50 transition-all group flex flex-col">
+                    ${article.image ? `
+                        <div class="w-full h-48 overflow-hidden relative">
+                            <img src="${article.image}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.parentElement.style.display='none'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#1C1E21] to-transparent"></div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="p-4 space-y-3">
+                        <div class="flex justify-between items-start gap-2">
+                            <h3 class="font-bold text-lg leading-tight flex-1 text-gray-100">${article.title}</h3>
+                            <span class="shrink-0 px-2 py-0.5 bg-blue-600/20 text-blue-400 text-[10px] font-bold rounded-full border border-blue-500/20">
+                                ${formatDate(article.publishedAt)}
+                            </span>
+                        </div>
+
+                        <p class="text-sm text-gray-400 line-clamp-3 leading-relaxed">
+                            ${article.description || ''}
+                        </p>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">${article.source || 'Unknown Source'}</span>
+                                <span class="text-gray-700">•</span>
+                                <a href="${article.url}" target="_blank" class="text-xs text-blue-500 font-bold hover:underline flex items-center gap-1">
+                                    Read Full <i data-lucide="external-link" class="w-3 h-3"></i>
+                                </a>
+                            </div>
+                            
+                            <button onclick="generatePost('${btoa(unescape(encodeURIComponent(article.title + '\n\n' + (article.description || ''))))}')" 
+                                    class="px-4 py-2 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                Generate Post
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function generatePost(base64Content) {
+            const content = decodeURIComponent(escape(atob(base64Content)));
+            // Store seed in localStorage and redirect to generator
+            localStorage.setItem('manual_post_seed', content);
+            window.location.href = '/generator_screen';
+        }
+
+        // Initialize
+        lucide.createIcons();
+        fetchTrends();
+    </script>
+</body>
+
+</html>

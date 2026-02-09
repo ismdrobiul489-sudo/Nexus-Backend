@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RSS & Trends | Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-['Inter'] min-h-screen pb-32">
+
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/home_screen" class="p-1 -ml-1 text-slate-400 hover:text-slate-600 transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </a>
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">RSS & Trends</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="toggleAddFeed()"
+                class="p-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+            <button onclick="fetchFeeds()"
+                class="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl shadow-sm active:scale-95 transition-all">
+                <i data-lucide="rotate-cw" class="w-5 h-5"></i>
+            </button>
+            <button onclick="window.location.href='/settings_screen'"
+                class="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-2xl shadow-sm active:scale-95 transition-all hidden">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Top Tab Selector -->
+    <div class="p-4 container mx-auto max-w-2xl">
+        <div class="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 shadow-sm">
+            <button onclick="setGlobalTab('rss')" id="global-tab-rss"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200">
+                <i data-lucide="rss" class="w-4 h-4"></i> RSS Feeds
+            </button>
+            <button onclick="setGlobalTab('news')" id="global-tab-news"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase">
+                <i data-lucide="trending-up" class="w-4 h-4"></i> News Trends
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-2xl mx-auto px-4">
+
+        <!-- RSS SECTION -->
+        <div id="section-rss" class="tab-content active space-y-6">
+            <!-- Add Feed Form (Hidden by default) -->
+            <div id="add-feed-form"
+                class="hidden bg-white p-6 rounded-3xl border border-slate-200 animate-fade-in space-y-5 shadow-sm">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Feed
+                            Label</label>
+                        <input type="text" id="feed-name" placeholder="e.g. My RSS Feed"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-inner">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Feed URL
+                            (RSS/Atom)</label>
+                        <input type="text" id="feed-url" placeholder="https://..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-inner">
+                    </div>
+                    <div class="flex gap-4 pt-2">
+                        <button onclick="toggleAddFeed()"
+                            class="flex-1 py-3.5 text-slate-400 font-extrabold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors">Cancel</button>
+                        <button onclick="addFeed()"
+                            class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Add
+                            Feed</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed List Horizontal Scroll -->
+            <div id="feed-list" class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                <!-- Feeds injected here as interactive chips -->
+            </div>
+
+            <!-- Action Bar -->
+            <div class="flex items-center gap-3">
+                <div id="rss-empty-state"
+                    class="w-full py-16 bg-white border border-slate-200 rounded-3xl text-center text-slate-300">
+                    <i data-lucide="rss" class="mx-auto w-16 h-16 mb-4 opacity-40"></i>
+                    <p class="text-sm font-extrabold text-slate-400 uppercase tracking-widest">No feeds active</p>
+                </div>
+            </div>
+
+            <!-- Articles List -->
+            <div id="rss-articles" class="space-y-4">
+                <!-- Articles injected here -->
+                <div class="text-center py-20 opacity-30">
+                    <i data-lucide="rss" class="mx-auto w-12 h-12 mb-4"></i>
+                    <p class="text-sm font-bold uppercase tracking-widest">No feeds active</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEWS SECTION -->
+        <div id="section-news" class="tab-content space-y-6">
+
+            <!-- Source Selector -->
+            <div class="grid grid-cols-3 gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+                <button onclick="setNewsSource('bing')" id="source-bing"
+                    class="py-3.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl transition-all bg-slate-100 text-slate-900 border border-slate-200">Bing</button>
+                <button onclick="setNewsSource('newsdata')" id="source-newsdata"
+                    class="py-3.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl transition-all text-slate-400 hover:bg-slate-50">NewsData</button>
+                <button onclick="setNewsSource('gnews')" id="source-gnews"
+                    class="py-3.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl transition-all text-slate-400 hover:bg-slate-50">GNews</button>
+            </div>
+
+            <!-- API Settings Card -->
+            <div id="news-api-settings"
+                class="hidden bg-amber-50 border border-amber-200 p-6 rounded-3xl space-y-5 animate-fade-in shadow-sm">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-extrabold text-amber-900 uppercase tracking-widest">API Configuration</h3>
+                    <i data-lucide="key" class="w-4 h-4 text-amber-500"></i>
+                </div>
+                <div class="space-y-3">
+                    <input type="password" id="news-api-key" placeholder="Enter API Key"
+                        class="w-full bg-white border border-amber-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-slate-900">
+                    <button onclick="saveApiKey()"
+                        class="w-full py-3.5 bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all">Save
+                        Credentials</button>
+                    <p class="text-[10px] text-amber-600/70 font-bold text-center uppercase tracking-widest">Free keys
+                        available at newsdata.io and gnews.io</p>
+                </div>
+            </div>
+
+            <!-- News Filters -->
+            <div id="news-filters" class="grid grid-cols-2 gap-3 hidden">
+                <div class="relative">
+                    <select id="news-category" onchange="fetchNews()"
+                        class="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-xs font-extrabold uppercase tracking-widest outline-none appearance-none text-slate-900 shadow-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+                        <option value="general">📰 General</option>
+                        <option value="technology">💻 Tech</option>
+                        <option value="business">💼 Business</option>
+                        <option value="science">🔬 Science</option>
+                        <option value="sports">⚽ Sports</option>
+                    </select>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="relative">
+                    <select id="news-country" onchange="fetchNews()"
+                        class="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-xs font-extrabold uppercase tracking-widest outline-none appearance-none text-slate-900 shadow-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+                        <option value="us">🇺🇸 USA</option>
+                        <option value="gb">🇬🇧 UK</option>
+                        <option value="bd">🇧🇩 BD</option>
+                        <option value="in">🇮🇳 India</option>
+                    </select>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="flex items-center gap-3">
+                <button onclick="fetchNews()" id="refresh-news-btn"
+                    class="flex-1 py-4.5 bg-blue-600 text-white rounded-2xl text-[11px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl shadow-blue-500/20">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="news-refresh-icon"></i> Refresh News
+                </button>
+                <div id="last-updated-news"
+                    class="bg-white border border-slate-200 px-5 py-4.5 rounded-2xl flex items-center gap-2.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest shadow-sm">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    <span id="news-time" class="text-slate-900">--:--</span>
+                </div>
+            </div>
+
+            <!-- News Articles -->
+            <div id="news-articles" class="space-y-4">
+                <!-- Articles injected here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-gray-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+        if (document.readyState !== 'loading') highlightActiveTab();
+    </script>
+
+    <script>
+        let feeds = [];
+        let articles = [];
+        let newsSource = 'bing';
+        let currentGlobalTab = 'rss';
+
+        // --- INIT ---
+        async function init() {
+            lucide.createIcons();
+            loadLocalKeys();
+            await fetchFeeds();
+            if (feeds.length > 0) fetchArticles();
+        }
+
+        function loadLocalKeys() {
+            document.getElementById('newsdata-key').value = localStorage.getItem('newsdata_api_key') || '';
+            document.getElementById('gnews-key').value = localStorage.getItem('gnews_api_key') || '';
+        }
+
+        function saveApiKeys() {
+            localStorage.setItem('newsdata_api_key', document.getElementById('newsdata-key').value);
+            localStorage.setItem('gnews_api_key', document.getElementById('gnews-key').value);
+        }
+
+        // --- NAVIGATION ---
+        function setGlobalTab(tab) {
+            currentGlobalTab = tab;
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`section-${tab}`).classList.add('active');
+
+            document.getElementById('global-tab-rss').className = tab === 'rss' ? "flex-1 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm" : "flex-1 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50";
+            document.getElementById('global-tab-news').className = tab === 'news' ? "flex-1 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm" : "flex-1 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50";
+
+            // Toggle header buttons
+            document.getElementById('add-feed-btn').classList.toggle('hidden', tab !== 'rss');
+            document.getElementById('settings-btn').classList.toggle('hidden', tab !== 'news');
+
+            if (tab === 'news' && articles.length === 0) fetchNews();
+            lucide.createIcons();
+        }
+
+        function toggleAddFeed() {
+            const form = document.getElementById('add-feed-form');
+            form.classList.toggle('hidden');
+        }
+
+        function toggleApiSettings() {
+            const card = document.getElementById('news-api-settings');
+            card.classList.toggle('hidden');
+        }
+
+        // --- RSS LOGIC ---
+        async function fetchFeeds() {
+            try {
+                const res = await fetch('/api/rss/feeds');
+                feeds = await res.json();
+                renderFeeds();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderFeeds() {
+            const container = document.getElementById('feed-list');
+            if (feeds.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = feeds.map(f => `
+                <div class="shrink-0 bg-white border border-slate-200 px-5 py-4 rounded-2xl flex items-center gap-4 animate-fade-in group shadow-sm">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-extrabold text-slate-900">${f.name}</span>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate w-24">${f.url}</span>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <button onclick="toggleZap('${f.id}', ${f.auto_fetch})" class="p-2 rounded-lg ${f.auto_fetch ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'} transition-all hover:scale-110">
+                            <i data-lucide="zap" class="w-4 h-4 ${f.auto_fetch ? 'fill-current' : ''}"></i>
+                        </button>
+                        <button onclick="deleteFeed('${f.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg transition-all hover:scale-110">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        async function saveFeed() {
+            const name = document.getElementById('feed-name').value;
+            const url = document.getElementById('feed-url').value;
+            if (!name || !url) return alert("Please fill both fields.");
+
+            try {
+                const res = await fetch('/api/rss/feeds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, url, auto_fetch: false })
+                });
+                if (res.ok) {
+                    document.getElementById('feed-name').value = '';
+                    document.getElementById('feed-url').value = '';
+                    toggleAddFeed();
+                    await fetchFeeds();
+                }
+            } catch (e) { alert("Fail to save feed"); }
+        }
+
+        async function deleteFeed(id) {
+            if (!confirm("Delete this feed?")) return;
+            try {
+                await fetch(`/api/rss/feeds/${id}`, { method: 'DELETE' });
+                await fetchFeeds();
+            } catch (e) { console.error(e); }
+        }
+
+        async function toggleZap(id, current) {
+            try {
+                await fetch(`/api/rss/feeds/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auto_fetch: !current })
+                });
+                await fetchFeeds();
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchArticles() {
+            if (feeds.length === 0) return;
+
+            const btn = document.getElementById('refresh-rss-btn');
+            const icon = document.getElementById('refresh-icon');
+            btn.disabled = true;
+            icon.classList.add('animate-spin');
+
+            const container = document.getElementById('rss-articles');
+            container.innerHTML = `<div class="py-20 flex justify-center"><i data-lucide="loader-2" class="w-10 h-10 animate-spin text-blue-500"></i></div>`;
+            lucide.createIcons();
+
+            let allArticles = [];
+            for (const feed of feeds) {
+                try {
+                    const res = await fetch(`/api/rss/fetch?rss_url=${encodeURIComponent(feed.url)}`);
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        allArticles.push(...data.items.map(item => ({
+                            ...item,
+                            source: feed.name,
+                            image: item.image // Use backend-normalized image
+                        })));
+                    }
+                } catch (e) { console.error(`Fetch failed for ${feed.name}`); }
+            }
+
+            // Sort by date
+            allArticles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+            renderArticles(allArticles);
+
+            document.getElementById('rss-time').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            btn.disabled = false;
+            icon.classList.remove('animate-spin');
+        }
+
+        function extractImage(content) {
+            if (!content) return null;
+            const match = content.match(/<img[^>]+src="([^">]+)"/);
+            return match ? match[1] : null;
+        }
+
+        function renderArticles(items) {
+            const container = document.getElementById('rss-articles');
+            if (items.length === 0) {
+                container.innerHTML = `<div class="py-20 text-center text-slate-300 font-extrabold uppercase tracking-widest text-xs">No articles found</div>`;
+                return;
+            }
+            container.innerHTML = items.map((item, idx) => `
+                <div class="bg-white rounded-[2rem] border border-slate-200 overflow-hidden animate-fade-in group hover:border-blue-500/30 transition-all shadow-sm">
+                    ${item.image ? `<img src="${item.image}" class="w-full h-56 object-cover" onerror="this.style.display='none'">` : ''}
+                    <div class="p-7 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-extrabold text-blue-600 uppercase tracking-widest p-1.5 px-3 bg-blue-50 rounded-xl">${item.source}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${formatDate(item.pubDate)}</span>
+                        </div>
+                        <h3 class="font-extrabold text-lg text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">${item.title}</h3>
+                        <p class="text-xs text-slate-500 font-medium leading-relaxed line-clamp-3">${stripHtml(item.description || '')}</p>
+                        <div class="flex items-center justify-between pt-4">
+                             <a href="${item.link}" target="_blank" class="text-[10px] font-extrabold text-slate-400 flex items-center gap-1.5 hover:text-slate-900 transition-colors">
+                                SOURCE <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                            <button onclick="seedPost('${b64EncodeUnicode(item.title + '\n\n' + stripHtml(item.description || ''))}')" 
+                                class="bg-blue-600 text-white px-6 py-3.5 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-blue-500/20">
+                                Create Post
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- NEWS LOGIC ---
+        function setNewsSource(src) {
+            newsSource = src;
+            document.querySelectorAll('[id^="source-"]').forEach(b => b.className = "py-3.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl transition-all text-slate-400 hover:bg-slate-50");
+            document.getElementById(`source-${src}`).className = "py-3.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm";
+
+            document.getElementById('news-filters').classList.toggle('hidden', src === 'bing');
+            fetchNews();
+        }
+
+        async function fetchNews() {
+            const btn = document.getElementById('refresh-news-btn');
+            const icon = document.getElementById('news-refresh-icon');
+            btn.disabled = true;
+            icon.classList.add('animate-spin');
+
+            const container = document.getElementById('news-articles');
+            container.innerHTML = `<div class="py-20 flex justify-center"><i data-lucide="loader-2" class="w-10 h-10 animate-spin text-blue-500"></i></div>`;
+            lucide.createIcons();
+
+            try {
+                let url = '/api/news/trends'; // Default Bing
+                if (newsSource === 'newsdata') {
+                    const cat = document.getElementById('news-category').value;
+                    const country = document.getElementById('news-country').value;
+                    const key = localStorage.getItem('newsdata_api_key');
+                    url = `/api/news/trends/dataio?category=${cat}&country=${country}&api_key=${key}`;
+                } else if (newsSource === 'gnews') {
+                    const cat = document.getElementById('news-category').value;
+                    const country = document.getElementById('news-country').value;
+                    const key = localStorage.getItem('gnews_api_key');
+                    url = `/api/news/trends/gnews?category=${cat}&country=${country}&api_key=${key}`;
+                }
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                let processed = [];
+                if (newsSource === 'bing') {
+                    processed = (data.value || data.results || []).map(a => ({
+                        title: a.name || a.title,
+                        description: a.description,
+                        image: a.image?.thumbnail?.contentUrl || a.image_url,
+                        link: a.url || a.link,
+                        source: a.provider?.[0]?.name || a.source_id || 'News',
+                        pubDate: a.datePublished || a.pubDate
+                    }));
+                } else {
+                    processed = (data.results || data.articles || []).map(a => ({
+                        title: a.title,
+                        description: a.description,
+                        image: a.image_url || a.image,
+                        link: a.link || a.url,
+                        source: a.source_id || a.source?.name || 'News',
+                        pubDate: a.pubDate || a.publishedAt
+                    }));
+                }
+
+                renderArticles(processed);
+                document.getElementById('news-time').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                container.innerHTML = `<div class="py-20 text-center text-red-600 font-extrabold text-[10px] uppercase tracking-widest bg-red-50 rounded-3xl border border-red-100 mx-4">FAILED TO LOAD NEWS. CHECK API KEYS.</div>`;
+            }
+
+            btn.disabled = false;
+            icon.classList.remove('animate-spin');
+        }
+
+        // --- UTILS ---
+        function seedPost(base64Content) {
+            const content = b64DecodeUnicode(base64Content);
+            localStorage.setItem('manual_post_seed', content);
+            window.location.href = '/generator_screen';
+        }
+
+        function formatDate(d) {
+            try {
+                const date = new Date(d);
+                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            } catch { return 'Now'; }
+        }
+
+        function stripHtml(html) {
+            let tmp = document.createElement("DIV");
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || "";
+        }
+
+        function b64EncodeUnicode(str) {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        }
+
+        function b64DecodeUnicode(str) {
+            return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

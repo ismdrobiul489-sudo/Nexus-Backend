@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Automation | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        blue: {
+                            500: '#3b82f6',
+                            600: '#2563eb'
+                        },
+                        background: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0'
+                    },
+                    primary: '#2563eb'
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-['Inter']">
+
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-5 flex items-center justify-between">
+        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Automation</h1>
+        <div class="flex p-1 bg-slate-100 rounded-xl gap-1 border border-slate-200">
+            <button onclick="setTab('config')" id="tab-config"
+                class="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all bg-white text-slate-900 shadow-sm border border-slate-200">
+                Setup
+            </button>
+            <button onclick="setTab('queue')" id="tab-queue"
+                class="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all text-slate-400 hover:text-slate-600">
+                Queue <span id="queue-count" class="ml-1 opacity-50">(0)</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-4 pb-24 max-w-md mx-auto w-full">
+
+        <!-- CONFIG SECTION -->
+        <div id="section-config" class="space-y-6 animate-fade-in">
+            <!-- Master Toggle -->
+            <div
+                class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 flex items-center justify-between group hover:border-blue-500/20 transition-all">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                        <i data-lucide="power" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-extrabold text-slate-900 tracking-tight">Master Auto-Pilot</h2>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Active System Control
+                        </p>
+                    </div>
+                </div>
+                <div onclick="togglePilot()" id="pilot-switch"
+                    class="w-16 h-9 bg-slate-200 rounded-full p-1.5 cursor-pointer transition-all relative overflow-hidden">
+                    <div id="pilot-knob"
+                        class="bg-white w-6 h-6 rounded-full shadow-lg transform transition-transform relative z-10">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scheduler -->
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 space-y-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                        <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-extrabold text-slate-900 tracking-tight">Active Hours</h3>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-3">
+                        <label
+                            class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Daily
+                            Start</label>
+                        <input type="time" id="set-start" onchange="updateSettings()"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-blue-500 transition-all shadow-inner">
+                    </div>
+                    <div class="space-y-3">
+                        <label
+                            class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Daily
+                            Stop</label>
+                        <input type="time" id="set-stop" onchange="updateSettings()"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-blue-500 transition-all shadow-inner">
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label
+                        class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Execution
+                        Speed</label>
+                    <div class="relative">
+                        <select id="set-freq" onchange="updateSettings()"
+                            class="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm font-extrabold text-slate-900 appearance-none focus:outline-none focus:border-blue-500 transition-all shadow-sm">
+                            <option value="hourly">Every Hour</option>
+                            <option value="twice_daily">Twice Daily</option>
+                            <option value="daily">Once Daily</option>
+                        </select>
+                        <i data-lucide="chevron-down"
+                            class="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-blue-50/30 rounded-2xl border border-blue-100">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="send" class="w-4 h-4 text-blue-600"></i>
+                        <span class="text-xs font-extrabold text-slate-700 uppercase tracking-wide">Auto-Publish</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="set-auto-publish" onchange="updateSettings()" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- AI Topics -->
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                            <i data-lucide="hash" class="w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-sm font-extrabold text-slate-900 tracking-tight">Content Persona</h3>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <input type="text" id="topic-input" placeholder="Add niche (e.g. AI News)"
+                        class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-medium text-slate-900 focus:outline-none focus:border-purple-500 transition-all shadow-inner">
+                    <button onclick="addTopic()"
+                        class="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div id="topic-tags" class="flex flex-wrap gap-2.5">
+                    <!-- Tags injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- QUEUE SECTION -->
+        <div id="section-queue" class="hidden space-y-6 animate-fade-in">
+            <div id="job-list" class="space-y-4">
+                <!-- Jobs injected here -->
+                <div class="text-center py-20 opacity-30 select-none">
+                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="inbox" class="w-10 h-10 text-slate-400"></i>
+                    </div>
+                    <p class="text-sm font-extrabold text-slate-400 uppercase tracking-widest">System Queue Empty</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        let settings = {};
+        let jobs = [];
+        let currentTab = 'config';
+
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+
+        async function init() {
+            highlightActiveTab();
+            lucide.createIcons();
+            await loadData();
+            startPolling();
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/settings');
+                settings = await res.json();
+                renderConfigTab();
+
+                const jres = await fetch('/api/jobs');
+                jobs = await jres.json();
+                renderQueueTab();
+            } catch (e) {
+                console.error("Load Error", e);
+            }
+        }
+
+        function setTab(tab) {
+            currentTab = tab;
+            const isConfig = tab === 'config';
+
+            document.getElementById('section-config').classList.toggle('hidden', !isConfig);
+            document.getElementById('section-queue').classList.toggle('hidden', isConfig);
+
+            document.getElementById('tab-config').className = isConfig
+                ? "px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all bg-white text-slate-900 shadow-sm border border-slate-200"
+                : "px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all text-slate-400 hover:text-slate-600";
+
+            document.getElementById('tab-queue').className = !isConfig
+                ? "px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all bg-white text-slate-900 shadow-sm border border-slate-200"
+                : "px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-lg transition-all text-slate-400 hover:text-slate-600";
+        }
+
+        function renderConfigTab() {
+            // Master Toggle
+            const switchBg = document.getElementById('pilot-switch');
+            const knob = document.getElementById('pilot-knob');
+            if (settings.enable_automation) {
+                switchBg.classList.add('bg-blue-600');
+                switchBg.classList.remove('bg-slate-200');
+                knob.style.transform = 'translateX(28px)';
+            } else {
+                switchBg.classList.remove('bg-blue-600');
+                switchBg.classList.add('bg-slate-200');
+                knob.style.transform = 'translateX(0px)';
+            }
+
+            // Inputs
+            document.getElementById('set-start').value = settings.posting_window_start || "09:00";
+            document.getElementById('set-stop').value = settings.posting_window_end || "21:00";
+            document.getElementById('set-freq').value = settings.execution_frequency || "hourly";
+            document.getElementById('set-auto-publish').checked = settings.auto_publish;
+
+            // Topics
+            const container = document.getElementById('topic-tags');
+            if (!settings.auto_topics || settings.auto_topics.length === 0) {
+                container.innerHTML = '<span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-widest ml-1 pt-2">No Niche Focus Defined</span>';
+            } else {
+                container.innerHTML = settings.auto_topics.map(t => `
+                    <span class="bg-purple-50 text-purple-700 px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-widest flex items-center gap-2 border border-purple-100 shadow-sm">
+                        ${t}
+                        <button onclick="removeTopic('${t}')" class="hover:text-red-500 transition-colors">
+                            <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </span>
+                `).join('');
+                lucide.createIcons();
+            }
+        }
+
+        function renderQueueTab() {
+            const list = document.getElementById('job-list');
+            const pendingJobs = jobs.filter(j => j.status === 'pending');
+            document.getElementById('queue-count').innerText = `(${pendingJobs.length})`;
+
+            if (jobs.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-20 opacity-30 select-none">
+                        <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="inbox" class="w-10 h-10 text-slate-400"></i>
+                        </div>
+                        <p class="text-sm font-extrabold text-slate-400 uppercase tracking-widest">System Queue Empty</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            list.innerHTML = jobs.map(job => {
+                const isPending = job.status === 'pending';
+                const isFailed = job.status === 'failed';
+                const isSuccess = job.status === 'success' || job.status === 'completed';
+
+                let accentClass = 'bg-slate-100 text-slate-400';
+                if (isPending) accentClass = 'bg-blue-50 text-blue-600';
+                if (isFailed) accentClass = 'bg-red-50 text-red-600';
+                if (isSuccess) accentClass = 'bg-green-50 text-green-600';
+
+                return `
+                    <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 group hover:border-blue-500/20 transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl ${accentClass} flex items-center justify-center">
+                                    <i data-lucide="${isPending ? 'clock' : (isFailed ? 'alert-circle' : 'check-circle')}" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-extrabold text-slate-900 tracking-tight uppercase tracking-widest">${job.type.replace('_', ' ')}</h4>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${new Date(job.scheduled_at).toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                            <div class="px-3 py-1 rounded-lg ${accentClass.replace('bg-', 'bg-opacity-10 bg-')} text-[9px] font-extrabold uppercase tracking-widest">
+                                ${job.status}
+                            </div>
+                        </div>
+                        
+                        ${job.error ? `<div class="bg-red-50 text-red-600 text-[9px] p-3 rounded-xl border border-red-100 mb-4 font-extrabold uppercase tracking-tight">${job.error}</div>` : ''}
+
+                        <div class="flex justify-end gap-4 pt-4 border-t border-slate-50">
+                            ${isPending ? `<button onclick="cancelJob('${job.id}')" class="text-[9px] font-extrabold text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all">Cancel</button>` : ''}
+                            <button onclick="retryJob('${job.id}')" class="text-[9px] font-extrabold text-blue-600 uppercase tracking-widest hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all">
+                                Action <i data-lucide="chevron-right" class="w-3 h-3 inline"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        async function togglePilot() {
+            settings.enable_automation = !settings.enable_automation;
+            await updateSettings();
+        }
+
+        async function updateSettings() {
+            try {
+                const payload = {
+                    ...settings,
+                    posting_window_start: document.getElementById('set-start').value,
+                    posting_window_end: document.getElementById('set-stop').value,
+                    execution_frequency: document.getElementById('set-freq').value,
+                    auto_publish: document.getElementById('set-auto-publish').checked,
+                };
+
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    settings = await res.json();
+                    renderConfigTab();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function addTopic() {
+            const input = document.getElementById('topic-input');
+            const topic = input.value.trim();
+            if (!topic) return;
+
+            if (!settings.auto_topics) settings.auto_topics = [];
+            if (!settings.auto_topics.includes(topic)) {
+                settings.auto_topics.push(topic);
+                input.value = '';
+                await updateSettings();
+            }
+        }
+
+        async function removeTopic(topic) {
+            settings.auto_topics = settings.auto_topics.filter(t => t !== topic);
+            await updateSettings();
+        }
+
+        async function cancelJob(id) {
+            if (!confirm("Are you sure you want to cancel this job?")) return;
+            try {
+                await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+                await loadData();
+            } catch (e) { alert("Failed to cancel"); }
+        }
+
+        async function retryJob(id) {
+            try {
+                await fetch(`/api/jobs/${id}/retry`, { method: 'POST' });
+                await loadData();
+            } catch (e) { alert("Failed to retry"); }
+        }
+
+        function startPolling() {
+            setInterval(async () => {
+                const res = await fetch('/api/jobs');
+                jobs = await res.json();
+                renderQueueTab();
+            }, 5000);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

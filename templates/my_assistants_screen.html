@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>My Assistants - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-['Inter'] min-h-screen pb-24">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-4">
+        <div class="container mx-auto flex items-center justify-between">
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">My Assistants</h1>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMenu()"
+                    class="p-2 hover:bg-slate-100 rounded-full transition-colors relative text-slate-500">
+                    <i data-lucide="more-vertical"></i>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div id="dropdown-menu"
+                    class="hidden absolute top-full right-4 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-1.5 animate-in fade-in zoom-in duration-200">
+                    <button onclick="sortByName()"
+                        class="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-slate-50 text-slate-700 text-sm">
+                        <i data-lucide="sort-asc" class="w-4 h-4 text-blue-600"></i>
+                        <span class="font-medium">Sort by Name</span>
+                    </button>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <button onclick="setFilter('all')"
+                        class="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-slate-50 text-slate-700 text-sm">
+                        <i data-lucide="list" class="w-4 h-4 text-slate-400"></i>
+                        <span class="font-medium">Show All</span>
+                    </button>
+                    <button onclick="setFilter('active')"
+                        class="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-slate-50 text-slate-700 text-sm">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+                        <span class="font-medium">Show Active Only</span>
+                    </button>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <button onclick="clearAllAssistants()"
+                        class="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-red-50 text-red-600 text-sm">
+                        <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i>
+                        <span class="font-bold">Clear All</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div
+        class="px-4 py-4 sticky top-[69px] z-30 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200 shadow-sm md:shadow-none">
+        <div class="container mx-auto relative group">
+            <input type="text" id="search-input" placeholder="Search assistants..." oninput="filterAssistants()"
+                class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 transition-all shadow-sm text-slate-900">
+            <i data-lucide="search"
+                class="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+        </div>
+    </div>
+
+    <!-- Assistants List -->
+    <main class="px-4 mt-6">
+        <div id="assistants-list" class="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Skeleton Loading -->
+            <div class="animate-pulse space-y-4 col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="h-32 bg-white rounded-2xl border border-slate-200"></div>
+                <div class="h-32 bg-white rounded-2xl border border-slate-200"></div>
+                <div class="h-32 bg-white rounded-2xl border border-slate-200"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button onclick="openWizard()"
+        class="fixed bottom-24 right-5 w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 active:scale-95 transition-all z-40">
+        <i data-lucide="plus" class="w-7 h-7 text-white"></i>
+    </button>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-gray-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+        if (document.readyState !== 'loading') highlightActiveTab();
+    </script>
+
+    <!-- ASSISTANT WIZARD MODAL -->
+    <div id="wizard-modal"
+        class="hidden fixed inset-0 z-[100] flex flex-col bg-slate-50 animate-in fade-in duration-300">
+        <!-- Wizard Header -->
+        <header class="bg-white px-4 py-4 flex items-center gap-4 border-b border-slate-200">
+            <button onclick="closeWizard()" class="p-1 -ml-1 text-slate-400">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+            <div>
+                <h2 id="wizard-title" class="font-bold text-lg text-slate-900">Create Assistant</h2>
+                <div class="flex items-center gap-1 mt-0.5">
+                    <span id="step-count" class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Step 1 of
+                        4</span>
+                    <span class="text-[10px] text-slate-200">•</span>
+                    <span id="step-label" class="text-[10px] text-slate-400 uppercase tracking-wider">Identity</span>
+                </div>
+            </div>
+            <button onclick="saveAssistant()"
+                class="ml-auto bg-blue-600 px-5 py-2 rounded-xl text-sm font-bold text-white active:scale-95 transition-all shadow-lg shadow-blue-500/20"
+                id="btn-save-wizard" style="display: none;">
+                Save
+            </button>
+        </header>
+
+        <!-- Progress Bar -->
+        <div class="h-1 bg-slate-100 w-full overflow-hidden">
+            <div id="wizard-progress" class="h-full bg-blue-600 transition-all duration-500 shadow-sm"
+                style="width: 25%;"></div>
+        </div>
+
+        <!-- Wizard Steps Container -->
+        <div id="steps-container" class="flex-1 overflow-y-auto px-4 py-6">
+            <div class="container mx-auto max-w-lg">
+                <!-- STEP 1: IDENTITY -->
+                <div id="step-1" class="space-y-6">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Assistant
+                            Name</label>
+                        <input type="text" id="wiz-name" placeholder="e.g., Tech News Bot"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 text-slate-900 shadow-sm">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">AI Brain
+                            (Provider)</label>
+                        <select id="wiz-ai-config"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-slate-900 shadow-sm">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Target
+                            Account</label>
+                        <select id="wiz-page"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-slate-900 shadow-sm">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Source
+                            Type</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="setSourceType('RSS')" id="btn-src-rss"
+                                class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-600 shadow-sm">
+                                <i data-lucide="rss"></i>
+                                <span class="text-xs font-bold">RSS Feed</span>
+                            </button>
+                            <button onclick="setSourceType('AI_TOPIC')" id="btn-src-ai"
+                                class="flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 bg-white text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all">
+                                <i data-lucide="lightbulb"></i>
+                                <span class="text-xs font-bold">AI Topic</span>
+                            </button>
+                            <button onclick="setSourceType('IMAGE_CAPTION')" id="btn-src-image"
+                                class="flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 bg-white text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all">
+                                <i data-lucide="image"></i>
+                                <span class="text-xs font-bold">Image Gen</span>
+                            </button>
+                            <button onclick="setSourceType('VIDEO_AUTOMATION')" id="btn-src-video"
+                                class="flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 bg-white text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all">
+                                <i data-lucide="video"></i>
+                                <span class="text-xs font-bold">Video Gen</span>
+                            </button>
+                            <button onclick="setSourceType('WEATHER_POST')" id="btn-src-weather"
+                                class="flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 bg-white text-slate-400 col-span-2 hover:border-blue-400 hover:text-blue-500 transition-all">
+                                <i data-lucide="cloud-sun"></i>
+                                <span class="text-xs font-bold">Weather Auto</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: SOURCE CONFIG -->
+                <div id="step-2" class="hidden space-y-6">
+                    <!-- RSS CONFIG -->
+                    <div id="config-rss" class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">RSS URL</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="wiz-rss-url" placeholder="https://site.com/feed"
+                                    class="flex-1 bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <button onclick="addRssFeed()"
+                                    class="bg-blue-600 p-3 rounded-xl hover:bg-blue-500 active:scale-95 transition-all">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="rss-list" class="space-y-2">
+                            <!-- List of feeds added -->
+                        </div>
+                    </div>
+
+                    <!-- AI TOPIC CONFIG -->
+                    <div id="config-ai" class="hidden space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">System Prompt /
+                                Role</label>
+                            <textarea id="wiz-ai-system" placeholder="You are a technology news expert reporting on..."
+                                class="w-full h-24 bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Main Topic /
+                                Niche</label>
+                            <input type="text" id="wiz-ai-topic" placeholder="Latest AI Breakthroughs"
+                                class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                    </div>
+
+                    <!-- IMAGE CAPTION CONFIG -->
+                    <div id="config-image" class="hidden space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1.5">
+                                <label
+                                    class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Niche</label>
+                                <input type="text" id="wiz-img-niche" placeholder="Nature, Tech, Cyberpunk"
+                                    class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Visual
+                                    Style</label>
+                                <select id="wiz-img-style"
+                                    class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                                    <option value="photorealistic">Photorealistic</option>
+                                    <option value="cyberpunk">Cyberpunk</option>
+                                    <option value="oil_painting">Oil Painting</option>
+                                    <option value="cinematic">Cinematic</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Custom System
+                                Prompt</label>
+                            <textarea id="wiz-img-prompt" placeholder="Generate high-quality visuals for..."
+                                class="w-full h-20 bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO AUTOMATION CONFIG -->
+                    <div id="config-video" class="hidden space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1.5">
+                                <label
+                                    class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Module</label>
+                                <select id="wiz-vid-module"
+                                    class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                                    <option value="story-reel">Story Reel</option>
+                                    <option value="fact-image">Fact Image</option>
+                                    <option value="quiz-reel">Quiz Reel</option>
+                                    <option value="text-story">Text Story</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Visual
+                                    Style</label>
+                                <select id="wiz-vid-style"
+                                    class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                                    <option value="photorealistic">Photorealistic</option>
+                                    <option value="cinematic">Cinematic</option>
+                                    <option value="anime">Anime</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Niche
+                                Details</label>
+                            <textarea id="wiz-vid-niche" placeholder="Space facts, Horror stories, etc."
+                                class="w-full h-20 bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none"></textarea>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Voice
+                                Overlay</label>
+                            <select id="wiz-vid-voice"
+                                class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                                <option value="af_heart">Heart (Female)</option>
+                                <option value="am_fenrir">Fenrir (Male)</option>
+                                <option value="af_bella">Bella (Female)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- WEATHER CONFIG -->
+                    <div id="config-weather" class="hidden space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Country</label>
+                            <select id="wiz-weather-country"
+                                class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                                <option value="BD">Bangladesh</option>
+                                <option value="US">United States</option>
+                                <option value="IN">India</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Report
+                                Template</label>
+                            <select id="wiz-weather-template"
+                                class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                                <option value="DIVISIONAL_TABLE">Divisional Table</option>
+                                <option value="FLASH_UPDATE">Flash Update</option>
+                                <option value="VIRAL_ALERT">Viral Alert (Auto-detect)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: TRANSFORMATION -->
+                <div id="step-3" class="hidden space-y-6">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Rewrite
+                            Content?</label>
+                        <select id="wiz-rewrite"
+                            class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                            <option value="AI_REWRITE">Yes, AI Rewriting (recommended)</option>
+                            <option value="DIRECT">No, use original text</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Hashtag
+                            Policy</label>
+                        <select id="wiz-hashtags"
+                            class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                            <option value="AUTO">Auto-generate Hashtags</option>
+                            <option value="NONE">No Hashtags</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- STEP 4: SCHEDULE -->
+                <div id="step-4" class="hidden space-y-6">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Frequency</label>
+                        <select id="wiz-freq"
+                            class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none">
+                            <option value="Daily">Daily</option>
+                            <option value="EVENT_DRIVEN">Event Driven (as news breaks)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Posting
+                            Time</label>
+                        <input type="time" id="wiz-time" value="09:00"
+                            class="w-full bg-[#1C1E21] border border-[#3b4354] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-blue-600/10 border border-blue-600/30">
+                        <p class="text-xs text-blue-400 leading-relaxed">
+                            <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1 -mt-0.5"></i>
+                            The assistant will run periodically to check for new content based on these settings.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wizard Footer -->
+            <footer class="bg-white p-6 border-t border-slate-200">
+                <div class="container mx-auto max-w-lg flex gap-4">
+                    <button onclick="prevStep()" id="btn-prev"
+                        class="flex-1 border border-slate-200 py-4 rounded-2xl font-bold text-sm text-slate-400 active:scale-95 transition-all opacity-0 pointer-events-none hover:bg-slate-50">
+                        Previous
+                    </button>
+                    <button onclick="nextStep()" id="btn-next"
+                        class="flex-[2] bg-blue-600 py-4 rounded-2xl font-bold text-sm text-white active:scale-95 transition-all shadow-lg shadow-blue-500/20 hover:bg-blue-700">
+                        Next Step
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+        <script>
+            let assistants = [];
+            let aiConfigs = [];
+            let socialAccounts = [];
+            let currentFilter = 'all';
+            let currentStep = 1;
+            let wizardMode = 'create';
+            let editingId = null;
+
+            // Wizard State
+            let wizardState = {
+                sourceType: 'RSS',
+                rssFeeds: []
+            };
+
+            const GRADIENTS = [
+                ['#3B82F6', '#10B981'], // Blue Green
+                ['#8B5CF6', '#EC4899'], // Purple Pink
+                ['#F59E0B', '#EF4444'], // Amber Red
+                ['#6366f1', '#8b5cf6'], // Indigo Purple
+                ['#14b8a6', '#0ea5e9'], // Teal Sky
+            ];
+
+            function getGradient(id) {
+                const charCode = id.charCodeAt(id.length - 1);
+                const colors = GRADIENTS[charCode % GRADIENTS.length];
+                return `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+            }
+
+            function calculateNextRun(item) {
+                if (item.source_type === 'RSS') return "Real-time";
+
+                if (item.source_type === 'AI_TOPIC' && item.fixed_times && item.fixed_times.length > 0) {
+                    const now = new Date();
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+                    const sortedTimes = [...item.fixed_times].sort((a, b) => {
+                        const [h1, m1] = a.split(':').map(Number);
+                        const [h2, m2] = b.split(':').map(Number);
+                        return (h1 * 60 + m1) - (h2 * 60 + m2);
+                    });
+
+                    let nextTime = sortedTimes.find(t => {
+                        const [h, m] = t.split(':').map(Number);
+                        return (h * 60 + m) >= currentMinutes;
+                    });
+
+                    let isTom = false;
+                    if (!nextTime) {
+                        nextTime = sortedTimes[0];
+                        isTom = true;
+                    }
+
+                    const [h, m] = nextTime.split(':').map(Number);
+                    const suffix = h >= 12 ? 'PM' : 'AM';
+                    const h12 = h % 12 || 12;
+                    const isNow = (h * 60 + m) === currentMinutes && !isTom;
+
+                    return `Next: ${h12}:${m.toString().padStart(2, '0')} ${suffix}${isTom ? ' (Tom)' : ''}${isNow ? ' (Running Now)' : ''}`;
+                }
+
+                if (item.schedule_frequency === 'Hourly') {
+                    return `Every ${item.posting_time.replace(/\D/g, '')} hrs`;
+                }
+
+                return item.posting_time || "09:00 AM";
+            }
+
+            async function init() {
+                lucide.createIcons();
+                await loadData();
+                renderAssistants();
+                // Refresh times every 30s
+                setInterval(renderAssistants, 30000);
+            }
+
+            async function loadData() {
+                try {
+                    const [resA, resS] = await Promise.all([
+                        fetch('/api/assistants'),
+                        fetch('/api/settings')
+                    ]);
+
+                    assistants = await resA.json();
+                    const settings = await resS.json();
+                    aiConfigs = settings.ai_configs || [];
+                    socialAccounts = settings.social_media_accounts || [];
+
+                    populateDropdowns();
+                } catch (e) {
+                    console.error("Load failed", e);
+                }
+            }
+
+            function populateDropdowns() {
+                const aiSel = document.getElementById('wiz-ai-config');
+                const pgSel = document.getElementById('wiz-page');
+
+                aiSel.innerHTML = aiConfigs.map(c => `<option value="${c.id}">${c.configName} (${c.provider})</option>`).join('');
+                pgSel.innerHTML = socialAccounts.map(a => `<option value="${a.page_id || a.id}">${a.account_name}</option>`).join('');
+            }
+
+            function renderAssistants() {
+                const list = document.getElementById('assistants-list');
+                let filtered = assistants;
+
+                if (currentFilter === 'active') filtered = assistants.filter(a => a.is_active);
+
+                const search = document.getElementById('search-input').value.toLowerCase();
+                if (search) filtered = filtered.filter(a => a.name.toLowerCase().includes(search));
+
+                if (filtered.length === 0) {
+                    list.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 opacity-50">
+                        <i data-lucide="search" class="w-12 h-12 mb-4 text-gray-600"></i>
+                        <p class="text-gray-500 font-medium">No assistants found</p>
+                    </div>
+                `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                list.innerHTML = filtered.map(item => {
+                    const nextRun = calculateNextRun(item);
+                    const gradient = getGradient(item.id);
+                    const badgeColor = item.source_type === 'RSS' ? 'bg-blue-100 text-blue-600' :
+                        item.source_type === 'AI_TOPIC' ? 'bg-purple-100 text-purple-600' :
+                            item.source_type === 'VIDEO_AUTOMATION' ? 'bg-red-100 text-red-600' :
+                                'bg-green-100 text-green-600';
+
+                    return `
+                <div class="bg-white overflow-hidden rounded-3xl border border-slate-200 relative group shadow-sm hover:shadow-md transition-all">
+                    <!-- Swipe Container Sim -->
+                    <div class="flex items-center justify-between p-5">
+                        <div class="flex items-center gap-4 flex-1 min-w-0">
+                            <div class="relative shrink-0">
+                                <div class="w-14 h-14 rounded-2xl" style="background: ${gradient}; opacity: 0.1"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                     <div class="w-8 h-8 rounded-full shadow-lg border-2 border-white" style="background: ${gradient}"></div>
+                                </div>
+                                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${badgeColor} border border-white whitespace-nowrap shadow-sm">
+                                    ${item.source_type.replace('_', ' ')}
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-extrabold text-slate-900 truncate tracking-tight">${item.name}</h3>
+                                <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1.5 mt-1">
+                                    <span class="w-2 h-2 rounded-full ${item.is_active ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}"></span>
+                                    ${nextRun}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                             <button onclick="toggleAssistant('${item.id}')" class="w-11 h-6 rounded-full p-1 transition-colors relative ${item.is_active ? 'bg-blue-600' : 'bg-slate-200'}">
+                                <div class="bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${item.is_active ? 'translate-x-5' : ''}"></div>
+                            </button>
+                            <div class="h-6 w-px bg-slate-100 mx-1"></div>
+                            <button onclick="editAssistant('${item.id}')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteAssistant('${item.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+                }).join('');
+                lucide.createIcons();
+            }
+
+            // Filter Logic
+            function toggleMenu() {
+                const menu = document.getElementById('dropdown-menu');
+                menu.classList.toggle('hidden');
+            }
+
+            function setFilter(val) {
+                currentFilter = val;
+                document.getElementById('dropdown-menu').classList.add('hidden');
+                renderAssistants();
+            }
+
+            // Wizard Management
+            function openWizard(id = null) {
+                const modal = document.getElementById('wizard-modal');
+                modal.classList.remove('hidden');
+                currentStep = 1;
+                updateWizardUI();
+
+                if (id) {
+                    wizardMode = 'edit';
+                    editingId = id;
+                    const flow = assistants.find(a => a.id === id);
+                    document.getElementById('wiz-name').value = flow.name;
+                    document.getElementById('wiz-ai-config').value = flow.ai_config_id;
+                    document.getElementById('wiz-page').value = flow.target_page_ids[0];
+                    setSourceType(flow.source_type);
+
+                    // Frequency & Time
+                    document.getElementById('wiz-freq').value = flow.schedule_frequency;
+                    document.getElementById('wiz-time').value = flow.posting_time;
+                    document.getElementById('wiz-rewrite').value = flow.rewrite_policy;
+                    document.getElementById('wiz-hashtags').value = flow.hashtag_strategy;
+
+                    // Specific Configs
+                    if (flow.source_type === 'RSS') {
+                        wizardState.rssFeeds = flow.rss_feeds || [];
+                        renderRssList();
+                    } else if (flow.source_type === 'AI_TOPIC') {
+                        const parts = (flow.ai_topic_prompt || '').split(' | ');
+                        document.getElementById('wiz-ai-system').value = parts[0] || '';
+                        document.getElementById('wiz-ai-topic').value = parts[1] || '';
+                    } else if (flow.source_type === 'IMAGE_CAPTION' && flow.image_caption_config) {
+                        const cfg = flow.image_caption_config;
+                        document.getElementById('wiz-img-niche').value = cfg.niche || '';
+                        document.getElementById('wiz-img-style').value = cfg.imageStyle || 'photorealistic';
+                        document.getElementById('wiz-img-prompt').value = cfg.systemPrompt || '';
+                    } else if (flow.source_type === 'VIDEO_AUTOMATION' && flow.video_automation_config) {
+                        const cfg = flow.video_automation_config;
+                        document.getElementById('wiz-vid-module').value = cfg.videoModule || 'story-reel';
+                        document.getElementById('wiz-vid-style').value = cfg.videoStyle || 'photorealistic';
+                        document.getElementById('wiz-vid-niche').value = cfg.videoNiche || '';
+                        document.getElementById('wiz-vid-voice').value = cfg.videoVoice || 'af_heart';
+                    } else if (flow.source_type === 'WEATHER_POST' && flow.weather_config) {
+                        const cfg = flow.weather_config;
+                        document.getElementById('wiz-weather-country').value = cfg.countryCode || 'BD';
+                        document.getElementById('wiz-weather-template').value = cfg.reportTemplate || 'DIVISIONAL_TABLE';
+                    }
+
+                    document.getElementById('wizard-title').innerText = "Edit Assistant";
+                } else {
+                    wizardMode = 'create';
+                    editingId = null;
+                    document.getElementById('wizard-title').innerText = "Create Assistant";
+                    document.getElementById('wiz-name').value = '';
+                    wizardState.rssFeeds = [];
+                    renderRssList();
+                }
+            }
+
+            function closeWizard() {
+                document.getElementById('wizard-modal').classList.add('hidden');
+            }
+
+            function updateWizardUI() {
+                // Steps visibility
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById(`step-${i}`).classList.toggle('hidden', i !== currentStep);
+                }
+
+                // Header & Progress
+                document.getElementById('step-count').innerText = `Step ${currentStep} of 4`;
+                const labels = ['Identity', 'Source', 'Transformation', 'Schedule'];
+                document.getElementById('step-label').innerText = labels[currentStep - 1];
+                document.getElementById('wizard-progress').style.width = `${(currentStep / 4) * 100}%`;
+
+                // Buttons
+                const btnPrev = document.getElementById('btn-prev');
+                btnPrev.classList.toggle('opacity-0', currentStep === 1);
+                btnPrev.classList.toggle('pointer-events-none', currentStep === 1);
+
+                const btnNext = document.getElementById('btn-next');
+                const btnSave = document.getElementById('btn-save-wizard');
+
+                if (currentStep === 4) {
+                    btnNext.classList.add('hidden');
+                    btnSave.style.display = 'block';
+                } else {
+                    btnNext.classList.remove('hidden');
+                    btnSave.style.display = 'none';
+                }
+            }
+
+            function nextStep() {
+                if (currentStep < 4) {
+                    currentStep++;
+                    updateWizardUI();
+                }
+            }
+
+            function prevStep() {
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateWizardUI();
+                }
+            }
+
+            function setSourceType(type) {
+                wizardState.sourceType = type;
+                const flowTypes = ['RSS', 'AI_TOPIC', 'IMAGE_CAPTION', 'VIDEO_AUTOMATION', 'WEATHER_POST'];
+                const buttonIds = {
+                    'RSS': 'btn-src-rss',
+                    'AI_TOPIC': 'btn-src-ai',
+                    'IMAGE_CAPTION': 'btn-src-image',
+                    'VIDEO_AUTOMATION': 'btn-src-video',
+                    'WEATHER_POST': 'btn-src-weather'
+                };
+                const configIds = {
+                    'RSS': 'config-rss',
+                    'AI_TOPIC': 'config-ai',
+                    'IMAGE_CAPTION': 'config-image',
+                    'VIDEO_AUTOMATION': 'config-video',
+                    'WEATHER_POST': 'config-weather'
+                };
+
+                flowTypes.forEach(t => {
+                    const btn = document.getElementById(buttonIds[t]);
+                    const cfg = document.getElementById(configIds[t]);
+                    if (t === type) {
+                        btn.className = 'flex flex-col items-center gap-2 p-4 rounded-xl border border-blue-600 bg-blue-600/10 text-blue-400';
+                        cfg.classList.remove('hidden');
+                    } else {
+                        btn.className = 'flex flex-col items-center gap-2 p-4 rounded-xl border border-[#3b4354] bg-[#1C1E21] text-gray-400';
+                        cfg.classList.add('hidden');
+                    }
+                });
+            }
+
+            function addRssFeed() {
+                const url = document.getElementById('wiz-rss-url').value;
+                if (!url) return;
+                wizardState.rssFeeds.push({ url, label: new URL(url).hostname, keywords: '' });
+                document.getElementById('wiz-rss-url').value = '';
+                renderRssList();
+            }
+
+            function renderRssList() {
+                const list = document.getElementById('rss-list');
+                list.innerHTML = wizardState.rssFeeds.map((f, i) => `
+                <div class="bg-[#1C1E21] p-3 rounded-xl border border-[#3b4354] flex items-center justify-between">
+                    <span class="text-xs text-gray-400 truncate max-w-[200px]">${f.url}</span>
+                    <button onclick="removeRssFeed(${i})" class="text-red-500 p-1">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+                lucide.createIcons();
+            }
+
+            function removeRssFeed(i) {
+                wizardState.rssFeeds.splice(i, 1);
+                renderRssList();
+            }
+
+            async function saveAssistant() {
+                const payload = {
+                    name: document.getElementById('wiz-name').value,
+                    source_type: wizardState.sourceType,
+                    is_active: true,
+                    target_page_ids: [document.getElementById('wiz-page').value],
+                    ai_config_id: document.getElementById('wiz-ai-config').value,
+                    schedule_frequency: document.getElementById('wiz-freq').value,
+                    posting_time: document.getElementById('wiz-time').value,
+                    rewrite_policy: document.getElementById('wiz-rewrite').value,
+                    hashtag_strategy: document.getElementById('wiz-hashtags').value,
+                    fixed_times: wizardState.sourceType === 'AI_TOPIC' ? [document.getElementById('wiz-time').value] : []
+                };
+
+                // Flow-specific Configs
+                if (wizardState.sourceType === 'RSS') {
+                    payload.rss_feeds = wizardState.rssFeeds;
+                } else if (wizardState.sourceType === 'AI_TOPIC') {
+                    payload.ai_topic_prompt = document.getElementById('wiz-ai-system').value + ' | ' + document.getElementById('wiz-ai-topic').value;
+                } else if (wizardState.sourceType === 'IMAGE_CAPTION') {
+                    payload.image_caption_config = {
+                        niche: document.getElementById('wiz-img-niche').value,
+                        imageStyle: document.getElementById('wiz-img-style').value,
+                        systemPrompt: document.getElementById('wiz-img-prompt').value,
+                        generateCaption: true
+                    };
+                } else if (wizardState.sourceType === 'VIDEO_AUTOMATION') {
+                    payload.video_automation_config = {
+                        videoModule: document.getElementById('wiz-vid-module').value,
+                        videoStyle: document.getElementById('wiz-vid-style').value,
+                        videoNiche: document.getElementById('wiz-vid-niche').value,
+                        videoVoice: document.getElementById('wiz-vid-voice').value
+                    };
+                } else if (wizardState.sourceType === 'WEATHER_POST') {
+                    payload.weather_config = {
+                        countryCode: document.getElementById('wiz-weather-country').value,
+                        reportTemplate: document.getElementById('wiz-weather-template').value
+                    };
+                }
+
+                const method = wizardMode === 'create' ? 'POST' : 'PUT';
+                const url = wizardMode === 'create' ? '/api/assistants' : `/api/assistants/${editingId}`;
+
+                try {
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        closeWizard();
+                        loadData().then(renderAssistants);
+                    }
+                } catch (e) {
+                    alert('Save failed: ' + e.message);
+                }
+            }
+
+            async function toggleAssistant(id) {
+                const flow = assistants.find(a => a.id === id);
+                flow.is_active = !flow.is_active;
+
+                try {
+                    await fetch(`/api/assistants/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(flow)
+                    });
+                    renderAssistants();
+                } catch (e) {
+                    alert('Toggle failed');
+                }
+            }
+
+            function editAssistant(id) {
+                openWizard(id);
+            }
+
+            async function deleteAssistant(id) {
+                if (!confirm("Are you sure?")) return;
+                try {
+                    await fetch(`/api/assistants/${id}`, { method: 'DELETE' });
+                    loadData().then(renderAssistants);
+                } catch (e) {
+                    alert('Delete failed');
+                }
+            }
+
+            function sortByName() {
+                assistants.sort((a, b) => a.name.localeCompare(b.name));
+                renderAssistants();
+                toggleMenu();
+            }
+
+            function filterAssistants() {
+                renderAssistants();
+            }
+
+            async function clearAllAssistants() {
+                if (!confirm("Delete ALL?")) return;
+                for (const flow of assistants) {
+                    await fetch(`/api/assistants/${flow.id}`, { method: 'DELETE' });
+                }
+                loadData().then(renderAssistants);
+                toggleMenu();
+            }
+
+            init();
+
+            init();
+        </script>
+</body>
+
+</html>

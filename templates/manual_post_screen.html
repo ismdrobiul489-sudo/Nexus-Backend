@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Post Generator - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .chip-active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-['Inter'] min-h-screen pb-32">
+
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/home_screen" class="p-1 -ml-1 text-slate-400 hover:text-slate-600 transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </a>
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Post Generator</h1>
+        </div>
+        <div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+    </header>
+
+    <!-- Top Tabs -->
+    <div class="p-4 container mx-auto max-w-2xl">
+        <div class="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 shadow-sm">
+            <button onclick="setTab('post')" id="tab-post"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm">
+                <i data-lucide="layout" class="w-4 h-4"></i> Post
+            </button>
+            <button onclick="setTab('image-gen')" id="tab-image-gen"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase">
+                <i data-lucide="image" class="w-4 h-4"></i> Image Gen
+            </button>
+            <button onclick="setTab('studio')" id="tab-studio"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase">
+                <i data-lucide="clapperboard" class="w-4 h-4"></i> Studio
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="px-4 space-y-6 max-w-2xl mx-auto">
+
+        <!-- Post Content Area -->
+        <div id="section-post" class="tab-content active space-y-7">
+            <!-- Account Multi-Selector -->
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Select Accounts
+                </h3>
+                <div id="account-chips" class="flex flex-wrap gap-2.5">
+                    <div class="animate-pulse bg-slate-200 h-10 w-28 rounded-2xl"></div>
+                </div>
+            </div>
+
+            <!-- Media Upload -->
+            <div id="media-upload-area" class="space-y-4">
+                <div onclick="document.getElementById('file-input').click()"
+                    class="relative border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-white p-12 text-center hover:border-blue-500/50 hover:bg-blue-50/30 transition-all cursor-pointer group shadow-sm">
+                    <input type="file" id="file-input" class="hidden" accept="image/*,video/*"
+                        onchange="handleFileSelect(event)">
+                    <div id="upload-placeholder">
+                        <div
+                            class="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mx-auto mb-5 transition-transform group-hover:scale-110">
+                            <i data-lucide="cloud-upload" class="w-10 h-10"></i>
+                        </div>
+                        <p class="text-sm font-extrabold text-slate-900">Drop media here or browse</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">Images or Videos
+                            Supported</p>
+                    </div>
+                    <div id="preview-container"
+                        class="hidden absolute inset-0 bg-white rounded-[2.5rem] overflow-hidden">
+                        <img id="image-preview" class="w-full h-full object-cover hidden">
+                        <video id="video-preview" class="w-full h-full object-cover hidden" controls></video>
+                        <button onclick="clearPreview(event)"
+                            class="absolute top-4 right-4 p-2.5 bg-red-600 text-white rounded-2xl shadow-xl active:scale-95 transition-all">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- HF Picker Trigger -->
+                <button onclick="toggleHfPicker()"
+                    class="w-full py-4.5 bg-white border border-slate-200 rounded-[1.5rem] flex items-center justify-center gap-3 text-xs font-extrabold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                    <i data-lucide="hard-drive" class="w-5 h-5 text-slate-400"></i>
+                    Browse HuggingFace Storage
+                </button>
+            </div>
+
+            <!-- Video Type (Hidden unless video) -->
+            <div id="video-options"
+                class="hidden space-y-4 p-6 bg-blue-50 border border-blue-100 rounded-3xl shadow-sm">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest ml-1">Video
+                        Distribution</h3>
+                    <i data-lucide="video" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="selectVideoType('reel')" id="btn-reel"
+                        class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all">Reel
+                        / Short</button>
+                    <button onclick="selectVideoType('video')" id="btn-video"
+                        class="flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest bg-white text-blue-600 border border-blue-200 hover:bg-blue-100/50 transition-all">Standard
+                        Video</button>
+                </div>
+            </div>
+
+            <!-- AI Assistant (New Integration) -->
+            <div
+                class="space-y-5 p-7 bg-purple-50 border border-purple-100 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-purple-200/20 rounded-full blur-3xl"></div>
+                <div class="flex items-center justify-between relative">
+                    <h3 class="text-[10px] font-extrabold text-purple-600 uppercase tracking-widest ml-1">AI Post
+                        Copywriter</h3>
+                    <div class="flex items-center gap-2">
+                        <select id="ai-persona"
+                            class="bg-white border border-purple-200 rounded-xl px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-purple-600 outline-none">
+                            <option value="engaging">Engaging</option>
+                            <option value="professional">Professional</option>
+                            <option value="clickbait">Viral / Catchy</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="relative">
+                    <textarea id="ai-prompt" placeholder="What's this post about? (Optional)"
+                        class="w-full bg-white/80 backdrop-blur-sm border border-purple-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-slate-900 min-h-[100px] shadow-inner"></textarea>
+                    <button onclick="generateCaption()" id="gen-btn"
+                        class="absolute bottom-4 right-4 w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-purple-500/30 active:scale-90 transition-all">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Caption -->
+            <div class="space-y-3 pt-2">
+                <label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Final
+                    Caption /
+                    Description</label>
+                <textarea id="post-caption" rows="6" placeholder="Write your post here..."
+                    class="w-full bg-white border border-slate-200 rounded-[1.5rem] px-5 py-5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 shadow-sm min-h-[180px]"></textarea>
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <button onclick="addToQueue()" id="queue-btn"
+                        class="w-full py-5.5 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center gap-3 text-sm font-extrabold shadow-xl shadow-slate-900/20 active:scale-95 transition-all">
+                        <i data-lucide="clock" class="w-5 h-5 text-slate-400"></i> Add to Queue
+                    </button>
+                    <button onclick="publishPost()" id="publish-btn"
+                        class="w-full py-5.5 bg-blue-600 text-white rounded-[1.5rem] flex items-center justify-center gap-3 text-sm font-extrabold shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
+                        <i data-lucide="send" class="w-5 h-5"></i> Publish Now
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Image Gen Area -->
+        <div id="section-image-gen" class="tab-content space-y-6">
+            <div
+                class="bg-white p-8 rounded-[2.5rem] border border-slate-200 space-y-6 shadow-sm relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-purple-100/30 rounded-full blur-3xl"></div>
+                <h2 class="text-lg font-extrabold flex items-center gap-3 text-slate-900 relative">
+                    <div class="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
+                        <i data-lucide="palette" class="w-5 h-5"></i>
+                    </div>
+                    AI Image Generator
+                </h2>
+                <div class="space-y-5 relative">
+                    <textarea id="image-prompt" rows="3" placeholder="Describe the image you want in detail..."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-slate-900 shadow-inner min-h-[120px]"></textarea>
+                    <button onclick="generateImage()" id="gen-img-btn"
+                        class="w-full py-5 bg-purple-600 text-white rounded-2xl text-[11px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-purple-500/20 active:scale-95 transition-all">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-purple-200"></i> Generate Artwork
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- HF Picker Modal -->
+    <div id="hf-picker-modal"
+        class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-slate-200 overflow-hidden flex flex-col max-h-[80vh] shadow-2xl animate-fade-in-up">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-extrabold flex items-center gap-3 text-slate-900">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                        <i data-lucide="hard-drive" class="w-5 h-5"></i>
+                    </div>
+                    Cloud Storage
+                </h3>
+                <button onclick="toggleHfPicker()"
+                    class="p-2.5 bg-slate-100 text-slate-400 hover:text-slate-600 rounded-2xl transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="hf-breadscrumb"
+                class="px-6 py-3 bg-slate-50 text-[10px] text-slate-400 font-extrabold uppercase tracking-widest border-b border-slate-100 overflow-x-auto scrollbar-hide whitespace-nowrap">
+                /root
+            </div>
+            <div id="hf-file-list" class="flex-1 overflow-y-auto p-4 min-h-[300px] space-y-1">
+                <!-- Files loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+        if (document.readyState !== 'loading') highlightActiveTab();
+    </script>
+
+    <script>
+        let accounts = [];
+        let selectedAccounts = [];
+        let hfVideoUrl = null;
+        let localFile = null;
+        let videoType = 'regular';
+        let hfCurrentPath = '';
+
+        async function init() {
+            lucide.createIcons();
+            await fetchAccounts();
+            await fetchAiModels();
+
+            // Handle Manual Post seed from News Trends
+            const seed = localStorage.getItem('manual_post_seed');
+            if (seed) {
+                document.getElementById('caption-input').value = seed;
+                localStorage.removeItem('manual_post_seed');
+                // Trigger auto-grow if applicable
+                document.getElementById('caption-input').dispatchEvent(new Event('input'));
+            }
+        }
+
+        async function fetchAiModels() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                const configs = data.ai_configs || [];
+                const select = document.getElementById('ai-model-select');
+
+                if (configs.length > 0) {
+                    select.innerHTML = configs.map(c => `<option value="${c.id}">${c.configName} (${c.model})</option>`).join('');
+                } else {
+                    select.innerHTML = `<option value="">No Active AI Assistant</option>`;
+                }
+            } catch (e) { console.error("AI fetch fail", e); }
+        }
+
+        async function generateDraft() {
+            const prompt = document.getElementById('ai-prompt').value;
+            const configId = document.getElementById('ai-model-select').value;
+            if (!prompt) return alert("Enter a prompt for the AI.");
+            if (!configId) return alert("Select an AI Assistant first.");
+
+            const btn = document.getElementById('btn-generate-draft');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>`;
+            lucide.createIcons();
+
+            try {
+                // In this app, we reuse /api/ai/draft but it needs configId
+                const res = await fetch('/api/ai/draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, configId })
+                });
+                const data = await res.json();
+                if (data.status === 'success' || data.content) {
+                    document.getElementById('caption-input').value = data.content || data.result;
+                } else {
+                    alert("Draft generation failed.");
+                }
+            } catch (e) { alert("AI Error: " + e.message); }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                lucide.createIcons();
+            }
+        }
+
+        async function fetchAccounts() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                accounts = data.socialMediaAccounts || [];
+                renderAccountChips();
+            } catch (e) { console.error("Account fetch fail", e); }
+        }
+
+        function renderAccountChips() {
+            const container = document.getElementById('account-chips');
+            if (accounts.length === 0) {
+                container.innerHTML = `<span class="text-xs text-yellow-500">No accounts found. Go to Settings.</span>`;
+                return;
+            }
+            container.innerHTML = accounts.map(acc => {
+                const id = acc.pageId || acc.id || acc.page_id;
+                const active = selectedAccounts.includes(id);
+                return `
+                    <button onclick="toggleAccount('${id}')" 
+                        class="px-5 py-2.5 rounded-2xl border text-[10px] font-extrabold uppercase tracking-widest flex items-center gap-2.5 transition-all ${active ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}">
+                        ${active ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                        ${acc.accountName || acc.account_name}
+                    </button>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function toggleAccount(id) {
+            if (selectedAccounts.includes(id)) {
+                selectedAccounts = selectedAccounts.filter(a => a !== id);
+            } else {
+                selectedAccounts.push(id);
+            }
+            renderAccountChips();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            localFile = file;
+            hfVideoUrl = null; // Clear remote
+
+            const isVideo = file.type.startsWith('video');
+            document.getElementById('video-options').classList.toggle('hidden', !isVideo);
+
+            if (!isVideo) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('image-preview').classList.remove('hidden');
+                    document.getElementById('upload-placeholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('upload-placeholder').innerHTML = `
+                    <i data-lucide="file-video" class="w-8 h-8 text-blue-500 mb-2"></i>
+                    <p class="text-sm font-bold">${file.name}</p>
+                    <p class="text-[10px] text-gray-500">READY TO PUBLISH</p>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        async function toggleHfPicker() {
+            const modal = document.getElementById('hf-picker-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                loadHfFiles('');
+            }
+        }
+
+        async function loadHfFiles(path) {
+            hfCurrentPath = path;
+            document.getElementById('hf-breadscrumb').innerText = '/' + path;
+            const container = document.getElementById('hf-file-list');
+            container.innerHTML = `<div class="p-10 text-center"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto text-blue-500"></i></div>`;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch(`/api/storage/files?path=${path}`);
+                const files = await res.json();
+
+                container.innerHTML = files.map(file => `
+                    <div onclick="${file.type === 'directory' ? `loadHfFiles('${file.path}')` : `selectHfFile('${file.path}', '${file.name}')`}" 
+                        class="p-4 flex items-center justify-between hover:bg-slate-50 rounded-2xl cursor-pointer group transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl ${file.type === 'directory' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'} flex items-center justify-center transition-transform group-hover:scale-110">
+                                <i data-lucide="${file.type === 'directory' ? 'folder' : 'file'}" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-extrabold ${file.type === 'directory' ? 'text-slate-900' : 'text-slate-600'}">${file.name}</p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${file.type === 'directory' ? 'Folder' : (file.size / 1024 / 1024).toFixed(2) + ' MB'}</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
+                    </div>
+                `).join('');
+                if (path) {
+                    const parent = path.split('/').slice(0, -1).join('/');
+                    container.insertAdjacentHTML('afterbegin', `
+                        <div onclick="loadHfFiles('${parent}')" class="p-3 mb-2 flex items-center gap-3 hover:bg-slate-50 rounded-2xl cursor-pointer text-slate-400 font-extrabold uppercase tracking-widest text-[10px] transition-all">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            Back
+                        </div>
+                    `);
+                }
+                lucide.createIcons();
+            } catch (e) {
+                container.innerHTML = `<div class="p-10 text-center text-red-500">Failed to load storage</div>`;
+            }
+        }
+
+        function selectHfFile(path, name) {
+            // Check if it's a video/image
+            const isVideo = name.match(/\.(mp4|mov|avi|wmv)$/i);
+            const isImage = name.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+
+            if (!isVideo && !isImage) {
+                alert("Only images and videos are supported for posting.");
+                return;
+            }
+
+            hfVideoUrl = path; // In backend we resolve this to a full URL
+            localFile = null;
+
+            document.getElementById('upload-placeholder').innerHTML = `
+                <i data-lucide="${isVideo ? 'hard-drive' : 'image'}" class="w-8 h-8 text-blue-500 mb-2"></i>
+                <p class="text-sm font-bold">${name}</p>
+                <p class="text-[10px] text-blue-500 uppercase font-bold">USING HF STORAGE</p>
+            `;
+            document.getElementById('video-options').classList.toggle('hidden', !isVideo);
+            toggleHfPicker();
+            lucide.createIcons();
+        }
+
+        async function publishNow() {
+            if (selectedAccounts.length === 0) return alert("Select at least one account.");
+            if (!localFile && !hfVideoUrl) return alert("Select media.");
+
+            const btn = document.getElementById('publish-btn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> PUBLISHING...`;
+            lucide.createIcons();
+
+            try {
+                const formData = new FormData();
+                formData.append('caption', document.getElementById('caption-input').value);
+                formData.append('accounts', JSON.stringify(selectedAccounts));
+                formData.append('videoType', videoType);
+                formData.append('videoTitle', document.getElementById('video-title').value);
+
+                if (localFile) {
+                    formData.append('file', localFile);
+                } else if (hfVideoUrl) {
+                    formData.append('hfUrl', hfVideoUrl);
+                }
+
+                const res = await fetch('/api/manual-publish', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    alert("Published successfully!");
+                    location.reload();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.detail);
+                }
+            } catch (e) { alert("Publish failed."); }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                lucide.createIcons();
+            }
+        }
+
+        async function addToQueue() {
+            if (selectedAccounts.length === 0) return alert("Select at least one account.");
+            if (!localFile && !hfVideoUrl) return alert("Select media.");
+
+            const btn = event.currentTarget; // Get the button that was clicked
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> QUEUEING...`;
+            lucide.createIcons();
+
+            try {
+                const formData = new FormData();
+                formData.append('caption', document.getElementById('caption-input').value);
+                formData.append('accounts', JSON.stringify(selectedAccounts));
+                formData.append('videoType', videoType);
+                formData.append('videoTitle', document.getElementById('video-title').value);
+
+                // We'll use manual-publish as a way to upload and THEN queue
+                // Or better, let's create a specialized upload-only endpoint or handle it in add-to-queue
+                // For simplicity, let's assume the backend 'manual-publish' can be told to 'queue_only'
+                formData.append('queue_only', 'true');
+
+                const res = await fetch('/api/manual-publish', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    alert("Added to queue!");
+                    location.reload();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.detail);
+                }
+            } catch (e) { alert("Queueing failed."); }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                lucide.createIcons();
+            }
+        }
+
+        function setTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`section-${tab}`).classList.add('active');
+
+            ['post', 'image-gen', 'studio'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (!btn) return;
+                const active = t === tab;
+                btn.className = `flex-1 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${active ? 'bg-slate-100 text-slate-900 border border-slate-200 shadow-sm' : 'text-slate-400 hover:bg-slate-50'}`;
+            });
+            lucide.createIcons();
+        }
+
+        function selectVideoType(type) {
+            videoType = type;
+            document.getElementById('btn-reel').className = type === 'reel' ? "flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all" : "flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest bg-white text-blue-600 border border-blue-200 hover:bg-blue-100/50 transition-all";
+            document.getElementById('btn-video').className = type === 'video' ? "flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all" : "flex-1 py-3 px-4 rounded-xl text-[10px] font-extrabold uppercase tracking-widest bg-white text-blue-600 border border-blue-200 hover:bg-blue-100/50 transition-all";
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

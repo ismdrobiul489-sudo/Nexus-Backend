@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>System Console - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+        }
+
+        body {
+            background: var(--slate-50);
+            color: var(--slate-900);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .console-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--slate-200);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .log-line {
+            border-bottom: 1px solid var(--slate-100);
+            padding: 0.5rem 0;
+            transition: background 0.2s ease;
+        }
+
+        .log-line:hover {
+            background: rgba(139, 92, 246, 0.02);
+        }
+
+        .level-error {
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        .level-warn {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+
+        .level-debug {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .level-info {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .btn-ghost {
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            color: var(--slate-500);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ghost:hover {
+            background: var(--slate-100);
+            color: var(--slate-900);
+        }
+
+        .btn-danger-ghost:hover {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .filter-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            border: 1px solid var(--slate-200);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--slate-200);
+            border-radius: 10px;
+        }
+    </style>
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="glass-header p-4">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/settings_screen" class="btn-ghost -ml-2">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div class="flex flex-col">
+                    <h1 class="text-sm font-extrabold tracking-tight text-slate-900">System Console</h1>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time Runtime Logs</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                <button id="btn-filter" onclick="toggleFilter()" class="btn-ghost gap-2 px-3">
+                    <i data-lucide="filter" class="w-4 h-4"></i>
+                    <span id="filter-text" class="text-xs font-bold uppercase tracking-wider">All Events</span>
+                </button>
+                <div class="w-px h-4 bg-slate-200 mx-2"></div>
+                <button onclick="fetchLogs()" class="btn-ghost" title="Refresh">
+                    <i data-lucide="refresh-cw" class="w-4.5 h-4.5"></i>
+                </button>
+                <button onclick="exportLogs()" class="btn-ghost" title="Export to Clipboard">
+                    <i data-lucide="share-2" class="w-4.5 h-4.5"></i>
+                </button>
+                <button onclick="clearLogs()" class="btn-ghost btn-danger-ghost" title="Purge History">
+                    <i data-lucide="trash-2" class="w-4.5 h-4.5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 overflow-y-auto p-4 max-w-4xl mx-auto w-full" id="logs-container">
+        <!-- Logs will be injected here -->
+        <div class="flex flex-col items-center justify-center h-64 text-slate-300 gap-4">
+            <i data-lucide="terminal" class="w-12 h-12 opacity-20"></i>
+            <p class="text-xs font-bold uppercase tracking-widest animate-pulse">Establishing stream connection...</p>
+        </div>
+    </main>
+
+    <script>
+        let logs = [];
+        let filter = 'all'; // or 'error'
+
+        async function init() {
+            lucide.createIcons();
+            await fetchLogs();
+            setInterval(fetchLogs, 5000); // Auto-refresh every 5s for performance
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                if (!res.ok) throw new Error("Connection Lost");
+                logs = await res.json();
+                renderLogs();
+            } catch (e) {
+                console.error("Stream error", e);
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logs-container');
+            const filtered = filter === 'all' ? logs : logs.filter(l => l.level === 'error');
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-64 text-slate-300 gap-4">
+                        <i data-lucide="inbox" class="w-12 h-12 opacity-20"></i>
+                        <p class="text-xs font-bold uppercase tracking-widest italic">No events captured in this sequence</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            const headerHtml = `
+                <div class="flex items-center justify-between mb-6 pb-2 border-b border-slate-200">
+                    <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Sequence Log Output</span>
+                    <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">${filtered.length} Events Cache</span>
+                </div>
+            `;
+
+            const logsHtml = filtered.slice(-100).reverse().map(log => {
+                const timeStr = log.timestamp ? log.timestamp.split('T')[1]?.split('.')[0] || '??:??:??' : '??:??:??';
+                const levelClass = `level-${log.level.toLowerCase()}`;
+                const message = log.message && log.message.length > 500
+                    ? log.message.substring(0, 500) + '... [TRUNCATED]'
+                    : log.message;
+
+                return `
+                    <div class="log-line console-font text-[11px] flex gap-3 items-start group">
+                        <span class="text-slate-400 shrink-0 select-none">${timeStr}</span>
+                        <span class="uppercase text-[9px] font-black shrink-0 w-12 ${levelClass}">${log.level}</span>
+                        <span class="text-slate-700 leading-relaxed">${message}</span>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = headerHtml + logsHtml;
+            lucide.createIcons();
+        }
+
+        function toggleFilter() {
+            filter = filter === 'all' ? 'error' : 'all';
+            const text = document.getElementById('filter-text');
+            const btn = document.getElementById('btn-filter');
+
+            if (filter === 'error') {
+                btn.classList.add('text-red-500', 'bg-red-50');
+                text.innerText = "Errors Only";
+            } else {
+                btn.classList.remove('text-red-500', 'bg-red-50');
+                text.innerText = "All Events";
+            }
+            renderLogs();
+        }
+
+        async function clearLogs() {
+            if (!confirm('Clear all logs?')) return;
+            try {
+                await fetch('/api/logs', { method: 'DELETE' });
+                logs = [];
+                renderLogs();
+            } catch (e) { alert("Failed to clear logs"); }
+        }
+
+        function exportLogs() {
+            const logText = logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}]: ${l.message}`).join('\n');
+            navigator.clipboard.writeText(logText).then(() => {
+                alert("Logs copied to clipboard!");
+            }).catch(() => {
+                alert("Failed to copy logs");
+            });
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

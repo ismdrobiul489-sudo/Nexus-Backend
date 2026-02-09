@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>History - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-['Inter'] min-h-screen pb-24">
+
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/home_screen" class="p-1 -ml-1 text-slate-400 hover:text-slate-600 transition-colors">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </a>
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Post History</h1>
+        </div>
+        <button onclick="fetchHistory()"
+            class="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl shadow-sm active:scale-95 transition-all">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
+    </header>
+
+    <!-- Tabs -->
+    <div class="p-4 container mx-auto max-w-2xl">
+        <div class="bg-white p-1.5 rounded-2xl border border-slate-200 flex gap-1.5 shadow-sm">
+            <button onclick="setTab('queue')" id="tab-queue"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all bg-slate-100 text-slate-900 border border-slate-200 shadow-sm">
+                <i data-lucide="clock" class="w-4 h-4"></i> Scheduled
+            </button>
+            <button onclick="setTab('history')" id="tab-history"
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all text-slate-400 hover:bg-slate-50 uppercase">
+                <i data-lucide="history" class="w-4 h-4"></i> Completed
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <main id="history-list" class="px-4 pb-20 space-y-4 container mx-auto max-w-2xl">
+        <div class="py-20 text-center text-slate-300">
+            <i data-lucide="loader-2" class="w-10 h-10 animate-spin mx-auto mb-4 text-blue-500"></i>
+            <p class="text-[10px] font-extrabold uppercase tracking-widest">Loading history...</p>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation (Mobile Parity) -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around p-3 pb-8 z-50">
+        <a href="/home_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-rss">
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Stats</span>
+        </a>
+        <a href="/generator_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-generator">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Create</span>
+        </a>
+        <a href="/my_assistants_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400"
+            id="nav-automation">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/settings_screen" class="nav-item flex flex-col items-center gap-1 text-slate-400" id="nav-settings">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        // Active Tab Highlighting logic
+        function highlightActiveTab() {
+            const path = window.location.pathname;
+            const items = {
+                '/home_screen': 'nav-home',
+                '/': 'nav-home',
+                '/rss_feed_screen': 'nav-rss',
+                '/analytics_screen': 'nav-analytics',
+                '/generator_screen': 'nav-generator',
+                '/my_assistants_screen': 'nav-automation',
+                '/settings_screen': 'nav-settings'
+            };
+
+            const activeId = items[path];
+            if (activeId) {
+                const el = document.getElementById(activeId);
+                if (el) {
+                    el.classList.remove('text-slate-400');
+                    el.classList.add('text-blue-600');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', highlightActiveTab);
+        if (document.readyState !== 'loading') highlightActiveTab();
+    </script>
+
+    <script>
+        let activeTab = 'queue';
+        let historyData = [];
+
+        async function init() {
+            lucide.createIcons();
+            await fetchHistory();
+        }
+
+        async function fetchHistory() {
+            try {
+                // Fetch from the GeneratedPost (History) API
+                const res = await fetch('/api/jobs?limit=100'); // Or a dedicated history endpoint
+                const jobs = await res.json();
+                historyData = jobs;
+                renderHistory();
+            } catch (e) {
+                console.error("Fetch failed", e);
+                document.getElementById('history-list').innerHTML = `
+                    <div class="text-center py-20 text-red-500/60">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                        <p class="text-sm">Failed to load history</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        function setTab(tab) {
+            activeTab = tab;
+            ['queue', 'history'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const active = t === tab;
+                btn.className = `flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${active ? 'bg-slate-100 text-slate-900 border border-slate-200 shadow-sm' : 'text-slate-400 hover:bg-slate-50'}`;
+            });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const data = activeTab === 'queue'
+                ? historyData.filter(h => h.status === 'queued' || h.status === 'failed')
+                : historyData.filter(h => h.status === 'completed');
+
+            if (data.length === 0) {
+                list.innerHTML = `
+                    <div class="py-20 text-center text-slate-300">
+                        <i data-lucide="clock" class="w-16 h-16 mx-auto mb-4 opacity-20"></i>
+                        <p class="text-[10px] font-extrabold uppercase tracking-widest">No ${activeTab} items found</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            list.innerHTML = data.map(item => {
+                const isError = item.status === 'failed';
+                const isSuccess = item.status === 'completed'; // Changed from 'success' to 'completed'
+                const statusColor = isError ? 'text-red-600 bg-red-50 border-red-100' : (isSuccess ? 'text-green-600 bg-green-50 border-green-100' : 'text-blue-600 bg-blue-50 border-blue-100');
+
+                return `
+                    <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                                    <i data-lucide="${item.type === 'video' ? 'video' : 'image'}" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-extrabold text-slate-900">${item.account_name || 'Social Account'}</h4>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${new Date(item.created_at).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest border ${statusColor}">
+                                ${item.status}
+                            </span>
+                        </div>
+                        
+                        <p class="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                            ${item.payload?.content || item.payload?.postId || 'No caption'}
+                        </p>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-[#3b4354]/50">
+                            <div class="flex items-center gap-2 text-blue-400">
+                                <i data-lucide="facebook" class="w-4 h-4"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-tighter">Facebook Page</span>
+                            </div>
+                            ${isFailed ? `
+                                <button onclick="retryPost('${item.id}')" class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-red-900/20">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                    Retry
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        async function retryPost(id) {
+            if (!confirm('Retry this post?')) return;
+            try {
+                const res = await fetch(`/api/jobs/${id}/retry`, { method: 'POST' });
+                if (res.ok) {
+                    alert("Queued for retry!");
+                    fetchHistory();
+                }
+            } catch (e) { alert("Failed to retry"); }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

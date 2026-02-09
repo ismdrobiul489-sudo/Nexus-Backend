@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Execution History - Nexus ASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .log-item {
+            transition: all 0.2s ease;
+        }
+
+        .log-item:active {
+            scale: 0.98;
+        }
+    </style>
+</head>
+
+<body class="bg-[#101622] text-white font-['Inter'] min-h-screen pb-24">
+
+    <!-- Header -->
+    <header
+        class="sticky top-0 z-40 bg-[#1C1E21]/80 backdrop-blur-md border-b border-[#3b4354] px-4 py-4 flex items-center gap-3">
+        <a href="/home_screen" class="p-2 text-gray-400 hover:text-white transition-colors">
+            <i data-lucide="arrow-left"></i>
+        </a>
+        <h1 class="text-xl font-bold tracking-tight">Execution History</h1>
+    </header>
+
+    <!-- Main List -->
+    <main class="p-4 space-y-4">
+        <div id="logs-container" class="space-y-3">
+            <!-- Shimmer / Loading -->
+            <div class="animate-pulse space-y-3">
+                <div class="bg-[#1C1E21] h-20 rounded-2xl border border-[#3b4354]"></div>
+                <div class="bg-[#1C1E21] h-20 rounded-2xl border border-[#3b4354]"></div>
+                <div class="bg-[#1C1E21] h-20 rounded-2xl border border-[#3b4354]"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Detailed Logs -->
+    <div id="log-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="relative w-full max-w-2xl bg-[#1C1E21] rounded-t-[32px] border-t border-[#3b4354] p-6 max-h-[85vh] overflow-y-auto transform transition-transform translate-y-full"
+            id="modal-content">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 id="modal-title" class="text-xl font-bold mb-1">Flow Name</h2>
+                    <p id="modal-time" class="text-xs text-gray-500 font-medium font-mono uppercase"></p>
+                </div>
+                <button onclick="closeModal()"
+                    class="w-8 h-8 rounded-full bg-[#2A2A2A] flex items-center justify-center text-gray-400">
+                    <i data-lucide="x" class="w-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div id="modal-status-badge"
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                    <span id="modal-status-text">SUCCESS</span>
+                </div>
+
+                <div class="bg-[#0A0A0A] rounded-2xl border border-[#3b4354] p-4 font-mono text-[11px] space-y-2 overflow-x-auto"
+                    id="modal-logs">
+                    <!-- Logs go here -->
+                </div>
+
+                <div id="modal-error-container" class="hidden">
+                    <h3 class="text-xs font-bold text-red-500 uppercase tracking-widest mb-2 ml-1">Error Trace</h3>
+                    <div id="modal-error"
+                        class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs font-mono">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-[#1C1E21] border-t border-[#3b4354] px-6 py-3 flex justify-between items-center z-50">
+        <a href="/home_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px]">Home</span>
+        </a>
+        <a href="/rss_feed_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="rss" class="w-6 h-6"></i>
+            <span class="text-[10px]">RSS</span>
+        </a>
+        <a href="/analytics_screen" class="nav-btn text-gray-400">
+            <i data-lucide="bar-chart-2"></i>
+            <span class="text-[10px]">Analytics</span>
+        </a>
+        <a href="/my_assistants_screen" class="flex flex-col items-center gap-1 text-primary">
+            <i data-lucide="bot" class="w-6 h-6"></i>
+            <span class="text-[10px]">Assistants</span>
+        </a>
+        <a href="/settings_screen" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="settings" class="w-6 h-6"></i>
+            <span class="text-[10px]">Settings</span>
+        </a>
+    </nav>
+
+    <script>
+        let executionLogs = [];
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/execution-logs');
+                executionLogs = await res.json();
+                renderLogs();
+            } catch (e) {
+                console.error("Fetch Logs Error:", e);
+                document.getElementById('logs-container').innerHTML = `<div class="p-10 text-center text-red-400 text-sm">Failed to load history</div>`;
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logs-container');
+            if (executionLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="py-20 text-center opacity-30 select-none">
+                        <i data-lucide="history" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
+                        <p class="text-sm font-medium">No execution history found</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = executionLogs.map((log, idx) => `
+                <div onclick="openLogDetails('${log.id}')" class="log-item bg-[#1C1E21] p-4 rounded-2xl border border-[#3b4354] flex items-center justify-between shadow-lg shadow-black/20">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl ${log.status === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'} flex items-center justify-center">
+                            <i data-lucide="${log.status === 'success' ? 'check-circle' : 'alert-circle'}" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm">${log.flow_name}</h3>
+                            <p class="text-[10px] text-gray-500 font-mono mt-0.5">${log.time}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${getStatusClass(log.status)}">
+                            ${log.status}
+                        </span>
+                        <i data-lucide="chevron-right" class="w-4 text-gray-600"></i>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function getStatusClass(status) {
+            if (status === 'success') return 'bg-green-600/10 text-green-500';
+            if (status === 'failed') return 'bg-red-600/10 text-red-500';
+            return 'bg-blue-600/10 text-blue-500';
+        }
+
+        function openLogDetails(id) {
+            const log = executionLogs.find(l => l.id === id);
+            if (!log) return;
+
+            document.getElementById('modal-title').innerText = log.flow_name;
+            document.getElementById('modal-time').innerText = log.time;
+            document.getElementById('modal-status-text').innerText = log.status;
+
+            const badge = document.getElementById('modal-status-badge');
+            badge.className = `inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusClass(log.status)}`;
+
+            const logsBox = document.getElementById('modal-logs');
+            if (log.logs && log.logs.length > 0) {
+                logsBox.innerHTML = log.logs.map(l => `<div class="flex gap-2"><span class="text-gray-600 select-none">›</span><span class="text-gray-300">${l}</span></div>`).join('');
+            } else {
+                logsBox.innerHTML = `<div class="text-gray-500 italic">No detailed steps recorded for this run.</div>`;
+            }
+
+            const errorContainer = document.getElementById('modal-error-container');
+            if (log.error) {
+                errorContainer.classList.remove('hidden');
+                document.getElementById('modal-error').innerText = log.error;
+            } else {
+                errorContainer.classList.add('hidden');
+            }
+
+            // Show Modal
+            const modal = document.getElementById('log-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('translate-y-full');
+            }, 10);
+
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('log-modal');
+            const content = document.getElementById('modal-content');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchLogs);
+    </script>
+</body>
+
+</html>

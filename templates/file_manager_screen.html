@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>File Manager | Nexus ASM</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-light: #f5f3ff;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: #e2e8f0;
+        }
+
+        body {
+            background: var(--slate-50);
+            color: var(--slate-900);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--slate-200);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1.25rem 1rem;
+        }
+
+        .glass-input {
+            background: var(--slate-100);
+            border: 1px solid var(--slate-200);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            color: var(--slate-900);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.05);
+        }
+
+        .btn-action {
+            padding: 0.75rem;
+            border-radius: 1rem;
+            background: var(--slate-100);
+            border: 1px solid var(--slate-200);
+            color: var(--slate-600);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-action:hover {
+            background: #ffffff;
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.25);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        /* Customize Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--slate-200);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--slate-300);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 h-screen flex flex-col font-['Inter'] overflow-hidden">
+
+    <!-- Header -->
+    <header class="glass-header">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4">
+                <a href="/home_screen"
+                    class="p-2 -ml-2 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5 text-slate-600"></i>
+                </a>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="hard-drive" class="w-5 h-5 text-purple-600"></i>
+                        <h1 class="text-base font-extrabold tracking-tight text-slate-900">Vault Manager</h1>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleViewMode()" id="btn-view-mode" class="btn-action">
+                    <i data-lucide="grid" class="w-5 h-5"></i>
+                </button>
+                <button onclick="loadFiles()" class="btn-action">
+                    <i data-lucide="refresh-cw" id="refresh-icon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Breadcrumb & Control Bar -->
+        <div class="flex flex-col gap-4">
+            <div id="breadcrumb"
+                class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 overflow-x-auto whitespace-nowrap scrollbar-hide py-1">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex-1 relative">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="search-query" oninput="renderFiles()" placeholder="Search assets..."
+                        class="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-semibold focus:ring-2 focus:ring-purple-500/20 outline-none transition-all">
+                </div>
+                <button onclick="openNewFolderModal()" class="btn-action p-3">
+                    <i data-lucide="folder-plus" class="w-5 h-5"></i>
+                </button>
+                <button onclick="document.getElementById('file-input').click()" class="btn-primary">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span class="hidden xs:inline">Upload</span>
+                </button>
+                <input type="file" id="file-input" multiple class="hidden" onchange="handleFileUpload(event)">
+            </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="upload-progress-container" class="hidden mt-4">
+            <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <div id="upload-progress-bar"
+                    class="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300 w-0"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 pb-24" id="file-container">
+        <!-- Files will be rendered here -->
+        <div class="flex items-center justify-center h-full">
+            <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-purple-600"></i>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- New Folder Modal -->
+    <div id="folder-modal"
+        class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div
+            class="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl border border-slate-100 transform transition-all">
+            <h3 class="text-xl font-extrabold text-slate-900 mb-6 text-center">Create New Vault</h3>
+            <div class="space-y-4">
+                <input type="text" id="new-folder-name" placeholder="Name your directory..."
+                    class="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all placeholder:text-slate-400">
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeNewFolderModal()"
+                        class="flex-1 py-4 text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-colors">Discard</button>
+                    <button onclick="createFolder()"
+                        class="flex-1 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:scale-[1.02] transition-all active:scale-95 shadow-xl shadow-slate-900/10">Build
+                        folder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col z-[200]">
+        <header class="flex items-center justify-between p-6 text-white border-b border-white/10">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                </div>
+                <h3 id="preview-filename" class="text-base font-bold truncate tracking-tight">Viewing Digital Asset</h3>
+            </div>
+            <button onclick="closePreview()"
+                class="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all active:scale-90">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </header>
+        <div class="flex-1 flex items-center justify-center p-6">
+            <div id="preview-content"
+                class="max-w-4xl w-full max-h-full rounded-2xl overflow-hidden shadow-2xl bg-black/20 ring-1 ring-white/10">
+                <!-- Media injected by JS -->
+            </div>
+        </div>
+        <footer class="p-8 flex justify-center gap-4">
+            <button id="btn-preview-download"
+                class="flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-2xl font-extrabold text-sm shadow-xl active:scale-95 transition-transform">
+                <i data-lucide="download" class="w-4 h-4"></i> High-Res Download
+            </button>
+        </footer>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-200 px-6 pt-4 pb-8 flex justify-between items-center z-50">
+        <a href="/home_screen"
+            class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+            <i data-lucide="layout-grid" class="w-6 h-6"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Dash</span>
+        </a>
+        <a href="/automation_screen"
+            class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+            <i data-lucide="cpu" class="w-6 h-6"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Auto</span>
+        </a>
+        <a href="/file_manager_screen" class="flex flex-col items-center gap-1.5 text-indigo-600">
+            <div class="relative">
+                <i data-lucide="database" class="w-6 h-6"></i>
+                <span class="absolute -top-1 -right-1 w-2 h-2 bg-indigo-600 rounded-full border-2 border-white"></span>
+            </div>
+            <span class="text-[9px] font-black uppercase tracking-widest">Vault</span>
+        </a>
+        <a href="/rss_feed_screen"
+            class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+            <i data-lucide="zap" class="w-6 h-6"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Feeds</span>
+        </a>
+        <a href="/settings_screen"
+            class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+            <i data-lucide="cog" class="w-6 h-6"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Tools</span>
+        </a>
+    </nav>
+
+    <script>
+        let allFiles = [];
+        let currentPath = '';
+        let viewMode = 'list'; // 'list' or 'grid'
+        let settings = {};
+
+        async function init() {
+            lucide.createIcons();
+            await loadSettings();
+            await loadFiles();
+        }
+
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                settings = await res.json();
+            } catch (e) { console.error("Failed to load settings", e); }
+        }
+
+        async function loadFiles() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            refreshIcon.classList.add('animate-spin');
+
+            try {
+                const url = currentPath ? `/api/storage/files?path=${encodeURIComponent(currentPath)}` : '/api/storage/files';
+                const res = await fetch(url);
+                allFiles = await res.json();
+                renderBreadcrumb();
+                renderFiles();
+            } catch (e) {
+                console.error("Failed to load files", e);
+                document.getElementById('file-container').innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-red-500 gap-2">
+                        <i data-lucide="alert-circle" class="w-8 h-8"></i>
+                        <p class="font-bold">Failed to load files</p>
+                        <button onclick="loadFiles()" class="text-xs text-blue-500 underline">Try Again</button>
+                    </div>
+                `;
+                lucide.createIcons();
+            } finally {
+                refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function renderBreadcrumb() {
+            const container = document.getElementById('breadcrumb');
+            const parts = currentPath.split('/').filter(Boolean);
+
+            let html = `
+                <button onclick="navigateTo('')" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                </button>
+            `;
+
+            let accumulatedPath = '';
+            parts.forEach((part, index) => {
+                accumulatedPath += (index === 0 ? '' : '/') + part;
+                const path = accumulatedPath; // Closure
+                html += `
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300"></i>
+                    <button onclick="navigateTo('${path}')" class="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 whitespace-nowrap font-medium transition-colors">
+                        ${part}
+                    </button>
+                `;
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function navigateTo(path) {
+            currentPath = path;
+            loadFiles();
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('file-container');
+            const query = document.getElementById('search-query').value.toLowerCase();
+            const filtered = allFiles.filter(f => f.name.toLowerCase().includes(query));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+                        <i data-lucide="folder-open" class="w-16 h-16 opacity-20"></i>
+                        <p class="text-sm font-bold">No files found</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            if (viewMode === 'list') {
+                container.innerHTML = `
+                    <div class="space-y-1">
+                        ${currentPath ? `
+                            <div onclick="navigateUp()" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-white border border-transparent hover:border-slate-200 transition-all cursor-pointer group mb-2">
+                                <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center transition-transform group-active:scale-95 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50">
+                                    <i data-lucide="corner-left-up" class="w-5 h-5"></i>
+                                </div>
+                                <span class="font-bold text-sm text-slate-500 group-hover:text-slate-900">Back to Parent Directory</span>
+                            </div>
+                        ` : ''}
+                        ${filtered.map(f => renderFileItem(f)).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                        ${currentPath ? `
+                            <div onclick="navigateUp()" class="flex flex-col items-center justify-center p-4 rounded-3xl hover:bg-white border border-transparent hover:border-slate-200 transition-all cursor-pointer group aspect-square">
+                                <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-3 group-active:scale-95 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50">
+                                    <i data-lucide="corner-left-up" class="w-8 h-8"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Parent Dir</span>
+                            </div>
+                        ` : ''}
+                        ${filtered.map(f => renderFileGrid(f)).join('')}
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        function renderFileItem(f) {
+            const icon = getFileIcon(f);
+            const size = formatSize(f.size);
+            const isDir = f.type === 'directory';
+
+            return `
+                <div onclick="${isDir ? `navigateTo('${f.path}')` : `openPreview('${f.path}', '${f.name}', ${f.size})`}" 
+                    class="flex items-center justify-between p-4 rounded-2xl hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer group mb-1">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="w-12 h-12 flex items-center justify-center rounded-2xl ${isDir ? 'bg-amber-50 text-amber-500' : 'bg-indigo-50 text-indigo-600'} transition-transform group-active:scale-95">
+                            <i data-lucide="${icon}" class="w-6 h-6"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-sm text-slate-800 truncate pr-2">${f.name}</h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${isDir ? 'Directory' : size}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ${!isDir ? `
+                            <button onclick="event.stopPropagation(); downloadRemote('${f.path}', '${f.name}')" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                        ` : ''}
+                        <button onclick="event.stopPropagation(); deleteFile('${f.path}')" class="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFileGrid(f) {
+            const icon = getFileIcon(f);
+            const isDir = f.type === 'directory';
+
+            return `
+                <div onclick="${isDir ? `navigateTo('${f.path}')` : `openPreview('${f.path}', '${f.name}', ${f.size})`}" 
+                    class="flex flex-col items-center justify-center p-4 rounded-3xl hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer group border border-transparent hover:border-slate-200 relative aspect-square">
+                    <div class="w-16 h-16 flex items-center justify-center rounded-2xl mb-3 ${isDir ? 'bg-amber-50 text-amber-500' : 'bg-indigo-50 text-indigo-600'} transition-transform group-active:scale-95">
+                        <i data-lucide="${icon}" class="w-8 h-8"></i>
+                    </div>
+                    <p class="text-[11px] font-extrabold text-slate-700 text-center truncate w-full px-2">${f.name}</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">${isDir ? 'Folder' : formatSize(f.size)}</p>
+                    
+                    <button onclick="event.stopPropagation(); deleteFile('${f.path}')" 
+                        class="absolute top-2 right-2 w-8 h-8 bg-white border border-slate-100 text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-50 shadow-sm active:scale-90">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function navigateUp() {
+            const parts = currentPath.split('/').filter(Boolean);
+            parts.pop();
+            navigateTo(parts.join('/'));
+        }
+
+        function toggleViewMode() {
+            viewMode = viewMode === 'list' ? 'grid' : 'list';
+            const btn = document.getElementById('btn-view-mode');
+            btn.innerHTML = `<i data-lucide="${viewMode === 'grid' ? 'list' : 'grid'}" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>`;
+            renderFiles();
+            lucide.createIcons();
+        }
+
+        function getFileIcon(f) {
+            if (f.type === 'directory') return 'folder';
+            const ext = f.name.split('.').pop().toLowerCase();
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+            if (['mp4', 'mov', 'webm'].includes(ext)) return 'video';
+            if (['mp3', 'wav', 'ogg'].includes(ext)) return 'music';
+            if (['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext)) return 'file-text';
+            return 'file';
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Upload Logic
+        async function handleFileUpload(e) {
+            const files = e.target.files;
+            if (!files.length) return;
+
+            const container = document.getElementById('upload-progress-container');
+            const bar = document.getElementById('upload-progress-bar');
+            container.classList.remove('hidden');
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('path', currentPath);
+
+                try {
+                    // Start progress
+                    bar.style.width = `${((i) / files.length) * 100}%`;
+
+                    const res = await fetch('/api/storage/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!res.ok) throw new Error("Upload failed");
+
+                } catch (err) {
+                    alert(`Failed to upload ${file.name}`);
+                }
+            }
+
+            bar.style.width = '100%';
+            setTimeout(() => {
+                container.classList.add('hidden');
+                bar.style.width = '0';
+                loadFiles();
+            }, 1000);
+        }
+
+        // Action Buttons
+        function openNewFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
+        function closeNewFolderModal() { document.getElementById('folder-modal').classList.add('hidden'); }
+
+        async function createFolder() {
+            const name = document.getElementById('new-folder-name').value;
+            if (!name) return;
+
+            const path = currentPath ? `${currentPath}/${name}` : name;
+            try {
+                const res = await fetch(`/api/storage/folder?path=${encodeURIComponent(path)}`, { method: 'POST' });
+                if (res.ok) {
+                    closeNewFolderModal();
+                    document.getElementById('new-folder-name').value = '';
+                    loadFiles();
+                } else alert("Failed to create folder");
+            } catch (e) { alert("Error"); }
+        }
+
+        async function deleteFile(path) {
+            if (!confirm(`Are you sure you want to delete ${path}?`)) return;
+            try {
+                const res = await fetch(`/api/storage/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+                if (res.ok) loadFiles();
+                else alert("Delete failed");
+            } catch (e) { alert("Error"); }
+        }
+
+        function downloadRemote(path, name) {
+            const url = `/api/storage/raw?path=${encodeURIComponent(path)}`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Preview Logic
+        function openPreview(path, name, size) {
+            const ext = name.split('.').pop().toLowerCase();
+            const url = `/api/storage/raw?path=${encodeURIComponent(path)}`;
+            const container = document.getElementById('preview-content');
+
+            document.getElementById('preview-filename').innerText = name;
+            document.getElementById('btn-preview-download').onclick = () => downloadRemote(path, name);
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                container.innerHTML = `<img src="${url}" class="max-h-[70vh] w-auto">`;
+            } else if (['mp4', 'webm', 'mov'].includes(ext)) {
+                container.innerHTML = `<video src="${url}" controls autoPlay class="max-h-[70vh] w-auto"></video>`;
+            } else {
+                container.innerHTML = `
+                    <div class="p-20 flex flex-col items-center gap-4 text-white">
+                        <i data-lucide="file-text" class="w-16 h-16 opacity-40"></i>
+                        <p class="text-xs uppercase font-bold tracking-widest opacity-60">Preview not available</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('preview-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePreview() {
+            document.getElementById('preview-modal').classList.add('hidden');
+            document.getElementById('preview-content').innerHTML = '';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -16,21 +16,34 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # 2. Allow Health Check for uptime monitors
         if request.url.path == "/health":
              return await call_next(request)
+
+        # 3. Allow OAuth Callbacks (needs custom handling if secret is required, 
+        # but usually callbacks are public/state-checked)
+        if request.url.path == "/oauth-callback":
+             return await call_next(request)
              
-        # 3. Enforce Secret check for all /api endpoints
-        if request.url.path.startswith("/api"):
-            # Determine active key: .env overrides default
-            env_key = os.getenv("APP_SECRET_KEY")
-            active_key = env_key if env_key else DEFAULT_SECRET_KEY
-            
-            # Check for Header
-            client_secret = request.headers.get("X-App-Secret")
-            
-            if client_secret != active_key:
-                 LoggerService.warn(f"🚫 Unauthorized Access Attempt to {request.url.path} from {request.client.host}")
+        # 4. Enforce Secret check for everything else (API and Screens)
+        # Determine active key: .env overrides default
+        env_key = os.getenv("APP_SECRET_KEY")
+        active_key = env_key if env_key else DEFAULT_SECRET_KEY
+        
+        # Check for Header
+        client_secret = request.headers.get("X-App-Secret")
+        
+        if client_secret != active_key:
+             LoggerService.warn(f"🚫 Unauthorized Access Attempt to {request.url.path} from {request.client.host}")
+             
+             # Return JSON for API, HTML for Screens
+             if request.url.path.startswith("/api"):
                  return JSONResponse(
                      status_code=403, 
                      content={"detail": "Unauthorized: Invalid or missing X-App-Secret header."}
+                 )
+             else:
+                 from fastapi.responses import HTMLResponse
+                 return HTMLResponse(
+                     status_code=403,
+                     content="<h1>403 Forbidden</h1><p>Public access to these screens is disabled. Please use the local Nexus ASM Dashboard.</p>"
                  )
 
         response = await call_next(request)

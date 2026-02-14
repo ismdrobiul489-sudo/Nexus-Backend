@@ -24,7 +24,8 @@ class SchedulerService:
     @classmethod
     def start(cls):
         # 0. Check Lock File to prevent double-scheduler (e.g. Reloader or Multiple Terminals)
-        lock_file = "scheduler.lock"
+        lock_dir = "/app/data" if os.path.exists("/app/data") else "."
+        lock_file = os.path.join(lock_dir, "scheduler.lock")
         if os.path.exists(lock_file):
             try:
                 with open(lock_file, 'r') as f:
@@ -99,7 +100,8 @@ class SchedulerService:
             cls._scheduler.shutdown()
         
         # Remove Lock
-        lock_file = "scheduler.lock"
+        lock_dir = "/app/data" if os.path.exists("/app/data") else "."
+        lock_file = os.path.join(lock_dir, "scheduler.lock")
         if os.path.exists(lock_file):
             try:
                 with open(lock_file, 'r') as f:

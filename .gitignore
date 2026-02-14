@@ -173,3 +173,4 @@ remote_deploy.py
 scheduled_jobs_list.txt
 logs/
 *.log
+data/

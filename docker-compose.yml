@@ -8,13 +8,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./nexus_v2.db:/app/nexus_v2.db
-      - ./nexus_v2.db-shm:/app/nexus_v2.db-shm
-      - ./nexus_v2.db-wal:/app/nexus_v2.db-wal
-      - ./jobs.sqlite:/app/jobs.sqlite
-      - ./scheduler.lock:/app/scheduler.lock
+      - ./data:/app/data
     environment:
       - PORT=8000
-      - DATABASE_URL=sqlite+aiosqlite:///nexus_v2.db
-      - JOBS_DB_URL=sqlite+aiosqlite:///jobs.sqlite
+      - DATABASE_URL=sqlite+aiosqlite:///data/nexus_v2.db
+      - JOBS_DB_URL=sqlite:///data/jobs.sqlite
       - ALLOWED_ORIGINS=*

@@ -736,13 +736,12 @@ class ExecutionPipeline:
 
         memory_context = ", ".join(recent_ideas) if recent_ideas else "None"
         
-        # Build Concept Prompt accurately using template
-        concept_vars = {
-            "niche": niche,
-            "nicheDetails": vac.get("nicheDetails", niche),
-            "memoryContext": memory_context
-        }
-        concept = await VideoAiService.generate_concept(ai_config, VideoAiService._interpolate(CONCEPT_PROMPT_TEMPLATE, concept_vars))
+        concept = await VideoAiService.generate_concept(
+            ai_config, 
+            niche=niche, 
+            niche_details=vac.get("nicheDetails", niche),
+            memoryContext=memory_context
+        )
         LoggerService.info(f"Generated Concept: {concept}", flow_id=flow_id)
         
         # Save to memory immediately

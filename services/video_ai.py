@@ -23,9 +23,10 @@ class VideoAiService:
         print(f"[VideoAI] 🤖 Request to {provider} ({model})")
         # print(f"[VideoAI] 📜 Prompt Preview:\n{prompt[:500]}...")
 
-        if provider == 'Groq':
+        provider_lower = provider.lower()
+        if provider_lower == 'groq':
             return await ContentService.generate_with_groq(api_key, prompt, model, base_url)
-        elif provider == 'OpenRouter':
+        elif provider_lower == 'openrouter':
             return await ContentService.generate_with_openrouter(api_key, prompt, model, base_url)
         else:
             return await ContentService.generate_with_gemini(api_key, prompt, model)
@@ -49,46 +50,73 @@ class VideoAiService:
         return result
 
     @staticmethod
-    async def generate_concept(config: Dict[str, Any], prompt: str) -> str:
+    async def generate_concept(config: Dict[str, Any], niche: str, niche_details: str, system_prompt: str = None, **kwargs) -> str:
+        template = system_prompt or CONCEPT_PROMPT_TEMPLATE
+        context = {
+            "niche": niche,
+            "nicheDetails": niche_details,
+            **kwargs
+        }
+        prompt = VideoAiService._interpolate(template, context)
         return await VideoAiService._call_ai(config, prompt)
 
     @staticmethod
-    async def generate_story_reel_content(config: Dict[str, Any], topic: str, style: str, system_prompt: str = None) -> Dict[str, str]:
+    async def generate_story_reel_content(config: Dict[str, Any], topic: str, style: str, niche: str = "", niche_details: str = "", system_prompt: str = None) -> Dict[str, str]:
         template = system_prompt or STORY_REEL_TEMPLATE
-        prompt = VideoAiService._interpolate(template, {"topic": topic, "style": style})
+        prompt = VideoAiService._interpolate(template, {
+            "topic": topic, 
+            "style": style,
+            "niche": niche,
+            "nicheDetails": niche_details
+        })
         response = await VideoAiService._call_ai(config, prompt)
         return VideoAiService._parse_json(response)
 
     @staticmethod
-    async def generate_short_video_content(config: Dict[str, Any], topic: str, system_prompt: str = None) -> Dict[str, List[Dict[str, Any]]]:
+    async def generate_short_video_content(config: Dict[str, Any], topic: str, niche: str = "", niche_details: str = "", system_prompt: str = None) -> Dict[str, List[Dict[str, Any]]]:
         template = system_prompt or SHORT_VIDEO_TEMPLATE
-        prompt = VideoAiService._interpolate(template, {"topic": topic})
+        prompt = VideoAiService._interpolate(template, {
+            "topic": topic,
+            "niche": niche,
+            "nicheDetails": niche_details
+        })
         response = await VideoAiService._call_ai(config, prompt)
         return VideoAiService._parse_json(response)
 
     @staticmethod
-    async def generate_fact_image_content(config: Dict[str, Any], topic: str, system_prompt: str = None) -> Dict[str, Any]:
+    async def generate_fact_image_content(config: Dict[str, Any], topic: str, niche: str = "", niche_details: str = "", system_prompt: str = None) -> Dict[str, Any]:
         template = system_prompt or FACT_IMAGE_TEMPLATE
-        prompt = VideoAiService._interpolate(template, {"topic": topic})
+        prompt = VideoAiService._interpolate(template, {
+            "topic": topic,
+            "niche": niche,
+            "nicheDetails": niche_details
+        })
         response = await VideoAiService._call_ai(config, prompt)
         return VideoAiService._parse_json(response)
 
     @staticmethod
-    async def generate_quiz_content(config: Dict[str, Any], topic: str, count: int, system_prompt: str = None) -> Dict[str, List[Dict[str, Any]]]:
+    async def generate_quiz_content(config: Dict[str, Any], topic: str, count: int, niche: str = "", niche_details: str = "", system_prompt: str = None) -> Dict[str, List[Dict[str, Any]]]:
         template = system_prompt or QUIZ_TEMPLATE
-        prompt = VideoAiService._interpolate(template, {"topic": topic, "count": count})
+        prompt = VideoAiService._interpolate(template, {
+            "topic": topic, 
+            "count": count,
+            "niche": niche,
+            "nicheDetails": niche_details
+        })
         response = await VideoAiService._call_ai(config, prompt)
         return VideoAiService._parse_json(response)
 
     @staticmethod
-    async def generate_text_story_content(config: Dict[str, Any], scenario: str, person_a: str, person_b: str, message_count: int, tone: str, system_prompt: str = None) -> Dict[str, Any]:
+    async def generate_text_story_content(config: Dict[str, Any], scenario: str, person_a: str, person_b: str, message_count: int, tone: str, niche: str = "", niche_details: str = "", system_prompt: str = None) -> Dict[str, Any]:
         template = system_prompt or TEXT_STORY_TEMPLATE
         prompt = VideoAiService._interpolate(template, {
             "scenario": scenario,
             "personA": person_a,
             "personB": person_b,
             "messageCount": message_count,
-            "tone": tone
+            "tone": tone,
+            "niche": niche,
+            "nicheDetails": niche_details
         })
         response = await VideoAiService._call_ai(config, prompt)
         return VideoAiService._parse_json(response)

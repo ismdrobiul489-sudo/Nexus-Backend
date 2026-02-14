@@ -2,14 +2,25 @@ from sqlmodel import create_engine, SQLModel, Session
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# SQLite Database Name
-DATABASE_URL = "sqlite+aiosqlite:///./nexus_v2.db"
+import os
+
+# SQLite Database Name - Allow override for cloud persistence
+# Default: sqlite+aiosqlite:///./nexus_v2.db
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./nexus_v2.db")
+SYNC_DB_URL = DATABASE_URL.replace("+aiosqlite", "")
 
 # Create Sync Engine (for migrations/initial setup)
-engine = create_engine("sqlite:///./nexus_v2.db", connect_args={"check_same_thread": False})
+engine = create_engine(
+    SYNC_DB_URL, 
+    connect_args={"check_same_thread": False, "timeout": 30}
+)
 
 # Create Async Engine (for FastAPI usage)
-async_engine = create_async_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
+async_engine = create_async_engine(
+    DATABASE_URL, 
+    echo=False, 
+    connect_args={"check_same_thread": False, "timeout": 30}
+)
 
 # Async Session Factory
 async_session = sessionmaker(
@@ -24,6 +35,25 @@ sync_session = sessionmaker(
     engine, expire_on_commit=False
 )
 
+
+
+from sqlalchemy import event
+
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
+
+# For async engine, we need to handle it slightly differently depending on driver, 
+# but aiosqlite usually respects the pragma if set on the connection.
+@event.listens_for(async_engine.sync_engine, "connect")
+def set_async_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
 
 async def init_db():
     async with async_engine.begin() as conn:

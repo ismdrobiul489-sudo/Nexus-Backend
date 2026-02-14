@@ -61,9 +61,10 @@ class SchedulerService:
             LoggerService.error(f"Failed to write scheduler lock: {e}")
 
         if cls._scheduler is None:
-            db_path = os.path.abspath("jobs.sqlite")
+            # Allow override for cloud persistence (e.g. /data/jobs.sqlite)
+            jobs_db_url = os.getenv("JOBS_DB_URL", f"sqlite:///{os.path.abspath('jobs.sqlite')}")
             jobstores = {
-                'default': SQLAlchemyJobStore(url=f'sqlite:///{db_path}')
+                'default': SQLAlchemyJobStore(url=jobs_db_url)
             }
             # misfire_grace_time=3600: If PC is off, run jobs missed within last 1 hour
             cls._scheduler = AsyncIOScheduler(jobstores=jobstores, job_defaults={'misfire_grace_time': 3600}, timezone=utc)
@@ -341,6 +342,6 @@ class SchedulerService:
                     session.add(job)
                 
                 await session.commit()
-                LoggerService.success(f"✅ Resurrected {len(stuck_jobs)} Zombie Jobs.")
+                LoggerService.info(f"✅ Resurrected {len(stuck_jobs)} Zombie Jobs.")
             else:
                 LoggerService.info("✅ No Zombie Jobs found.")

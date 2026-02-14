@@ -561,22 +561,43 @@ async def get_settings(session: AsyncSession = Depends(get_session)):
 
 @router.post("/settings", response_model=AppSettings)
 async def update_settings(new_settings: AppSettings, session: AsyncSession = Depends(get_session)):
-    settings = (await session.execute(select(AppSettings))).scalars().first()
-    if not settings:
-
-        settings = AppSettings()
-        session.add(settings)
+    import asyncio
+    from sqlalchemy.exc import OperationalError
     
-    # Update fields
-    settings_data = new_settings.dict(exclude_unset=True)
-    for key, value in settings_data.items():
-        if key != "id": 
-            setattr(settings, key, value)
+    max_retries = 3
+    retry_delay = 0.5 # seconds
+    
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            settings = (await session.execute(select(AppSettings))).scalars().first()
+            if not settings:
+                settings = AppSettings()
+                session.add(settings)
             
-    session.add(settings)
-    await session.commit()
-    await session.refresh(settings)
-    return settings
+            # Update fields
+            settings_data = new_settings.dict(exclude_unset=True)
+            for key, value in settings_data.items():
+                if key != "id": 
+                    setattr(settings, key, value)
+                    
+            session.add(settings)
+            await session.commit()
+            await session.refresh(settings)
+            return settings
+        except OperationalError as e:
+            last_err = e
+            if "database is locked" in str(e).lower():
+                print(f"⚠️ [Settings] Database locked, retrying ({attempt + 1}/{max_retries})...")
+                await asyncio.sleep(retry_delay)
+                continue
+            raise e
+        except Exception as e:
+            print(f"🔴 [Settings] Unexpected Error: {str(e)}")
+            raise e
+            
+    print(f"❌ [Settings] Failed after {max_retries} attempts.")
+    raise last_err
 
 # --- JOBS ---
 @router.get("/jobs", response_model=List[Job])
@@ -1317,11 +1338,15 @@ async def video_ai_concept(req: Dict[str, Any], session: AsyncSession = Depends(
         config_id = req.get("configId")
         prompt = req.get("prompt")
         
+        niche = req.get("niche", "General")
+        niche_details = req.get("nicheDetails", "")
+        
         settings = (await session.execute(select(AppSettings))).scalars().first()
         ai_configs = settings.ai_configs or []
-        if not config: config = ai_configs[0] if ai_configs else None
+        config = next((c for c in ai_configs if str(c.get("id")) == str(config_id)), None)
+        if not config: config = (ai_configs[0] if ai_configs else {"provider": "Gemini", "apiKey": settings.gemini_api_key})
         
-        result = await VideoAiService.generate_concept(config, prompt)
+        result = await VideoAiService.generate_concept(config, niche, niche_details, prompt)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1334,11 +1359,15 @@ async def video_ai_story_reel(req: Dict[str, Any], session: AsyncSession = Depen
         prompt = req.get("prompt") # The user topic
         style = req.get("style", "Cinematic")
         
+        niche = req.get("niche", "General")
+        niche_details = req.get("nicheDetails", "")
+        
         settings = (await session.execute(select(AppSettings))).scalars().first()
         ai_configs = settings.ai_configs or []
-        if not config: config = ai_configs[0] if ai_configs else None
+        config = next((c for c in ai_configs if str(c.get("id")) == str(config_id)), None)
+        if not config: config = (ai_configs[0] if ai_configs else {"provider": "Gemini", "apiKey": settings.gemini_api_key})
         
-        result = await VideoAiService.generate_story_reel_content(config, prompt, style)
+        result = await VideoAiService.generate_story_reel_content(config, prompt, style, niche, niche_details)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1350,11 +1379,15 @@ async def video_ai_short_video(req: Dict[str, Any], session: AsyncSession = Depe
         config_id = req.get("configId")
         prompt = req.get("prompt")
         
+        niche = req.get("niche", "General")
+        niche_details = req.get("nicheDetails", "")
+        
         settings = (await session.execute(select(AppSettings))).scalars().first()
         ai_configs = settings.ai_configs or []
-        if not config: config = ai_configs[0] if ai_configs else None
+        config = next((c for c in ai_configs if str(c.get("id")) == str(config_id)), None)
+        if not config: config = (ai_configs[0] if ai_configs else {"provider": "Gemini", "apiKey": settings.gemini_api_key})
         
-        result = await VideoAiService.generate_short_video_content(config, prompt)
+        result = await VideoAiService.generate_short_video_content(config, prompt, niche, niche_details)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1366,11 +1399,15 @@ async def video_ai_fact_image(req: Dict[str, Any], session: AsyncSession = Depen
         config_id = req.get("configId")
         prompt = req.get("prompt")
         
+        niche = req.get("niche", "General")
+        niche_details = req.get("nicheDetails", "")
+        
         settings = (await session.execute(select(AppSettings))).scalars().first()
         ai_configs = settings.ai_configs or []
-        if not config: config = ai_configs[0] if ai_configs else None
+        config = next((c for c in ai_configs if str(c.get("id")) == str(config_id)), None)
+        if not config: config = (ai_configs[0] if ai_configs else {"provider": "Gemini", "apiKey": settings.gemini_api_key})
         
-        result = await VideoAiService.generate_fact_image_content(config, prompt)
+        result = await VideoAiService.generate_fact_image_content(config, prompt, niche, niche_details)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1383,11 +1420,15 @@ async def video_ai_quiz(req: Dict[str, Any], session: AsyncSession = Depends(get
         prompt = req.get("prompt")
         count = req.get("count", 5)
         
+        niche = req.get("niche", "General")
+        niche_details = req.get("nicheDetails", "")
+        
         settings = (await session.execute(select(AppSettings))).scalars().first()
         ai_configs = settings.ai_configs or []
-        if not config: config = ai_configs[0] if ai_configs else None
+        config = next((c for c in ai_configs if str(c.get("id")) == str(config_id)), None)
+        if not config: config = (ai_configs[0] if ai_configs else {"provider": "Gemini", "apiKey": settings.gemini_api_key})
         
-        result = await VideoAiService.generate_quiz_content(config, prompt, count)
+        result = await VideoAiService.generate_quiz_content(config, prompt, count, niche, niche_details)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1403,11 +1444,15 @@ async def video_ai_text_story(req: Dict[str, Any], session: AsyncSession = Depen
         count = req.get("count", 10)
         tone = req.get("tone", "emotional")
         
+        niche = req.get("niche", "General")
+        niche_details = req.get("nicheDetails", "")
+        
         settings = (await session.execute(select(AppSettings))).scalars().first()
         ai_configs = settings.ai_configs or []
-        if not config: config = ai_configs[0] if ai_configs else None
+        config = next((c for c in ai_configs if str(c.get("id")) == str(config_id)), None)
+        if not config: config = (ai_configs[0] if ai_configs else {"provider": "Gemini", "apiKey": settings.gemini_api_key})
         
-        result = await VideoAiService.generate_text_story_content(config, prompt, person_a, person_b, count, tone)
+        result = await VideoAiService.generate_text_story_content(config, prompt, person_a, person_b, count, tone, niche, niche_details)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

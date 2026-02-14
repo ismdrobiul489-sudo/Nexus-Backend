@@ -20,97 +20,111 @@ async def sync_assistants(payload: SyncRequest, session: AsyncSession = Depends(
     Receives the full state of assistants from the Frontend.
     Updates the Scheduler and SocialMediaAccounts to match.
     """
-    try:
-        LoggerService.info(f"🔄 Sync Request Received from {payload.client_id} with {len(payload.assistants)} assistants.")
-        
-        # 0. Sync AppSettings (AI Configs)
-        if payload.ai_configs is not None:
-             settings = (await session.execute(select(AppSettings))).scalars().first()
-             if not settings:
-                 settings = AppSettings(id=1)
+    import asyncio
+    from sqlalchemy.exc import OperationalError
+    
+    max_retries = 3
+    retry_delay = 0.5
+    last_err = None
+    
+    for attempt in range(max_retries):
+        try:
+            LoggerService.info(f"🔄 Sync Request Received from {payload.client_id} with {len(payload.assistants)} assistants.")
+            
+            # 0. Sync AppSettings (AI Configs)
+            if payload.ai_configs is not None:
+                 settings = (await session.execute(select(AppSettings))).scalars().first()
+                 if not settings:
+                     settings = AppSettings(id=1)
+                     session.add(settings)
+                 
+                 # LoggerService.info(f"💾 Syncing {len(payload.ai_configs)} AI Configs")
+                 settings.ai_configs = payload.ai_configs
+                 
+                 # Sync NCA API URL if present in credentials of any assistant
+                 for assistant in payload.assistants:
+                     if assistant.credentials and assistant.credentials.env_vars:
+                         nca_url = assistant.credentials.env_vars.get("nca_api_url") or assistant.credentials.env_vars.get("ncaApiUrl")
+                         if nca_url:
+                             settings.nca_api_url = nca_url
+                             break
+                 
                  session.add(settings)
-             
-             # LoggerService.info(f"💾 Syncing {len(payload.ai_configs)} AI Configs")
-             settings.ai_configs = payload.ai_configs
-             
-             # Sync NCA API URL if present in credentials of any assistant
-             for assistant in payload.assistants:
-                 if assistant.credentials and assistant.credentials.env_vars:
-                     nca_url = assistant.credentials.env_vars.get("nca_api_url") or assistant.credentials.env_vars.get("ncaApiUrl")
-                     if nca_url:
-                         settings.nca_api_url = nca_url
-                         break
-             
-             session.add(settings)
-        
-        # 1. Iterate and Upsert Jobs + Extract Accounts
-        all_social_accounts = {} # platform_pageid -> account_dict
-        
-        for assistant in payload.assistants:
-            if assistant.credentials:
-                LoggerService.info(f"🔍 SYNC DEBUG: Creds for {assistant.name} -> Provider: {assistant.credentials.provider}, Key: {assistant.credentials.gemini_key[:5]}...")
             
-            # 1. DB Persistence
-            await _persist_assistant_to_db(assistant, session)
+            # 1. Iterate and Upsert Jobs + Extract Accounts
+            all_social_accounts = {} # platform_pageid -> account_dict
             
-            # 2. Scheduler Update
-            SchedulerService.upsert_job(assistant)
-            
-            # 3. Extract accounts from credentials
-            if assistant.credentials and assistant.credentials.social_accounts:
-                for acc in assistant.credentials.social_accounts:
+            for assistant in payload.assistants:
+                # 1. DB Persistence
+                await _persist_assistant_to_db(assistant, session)
+                
+                # 2. Scheduler Update
+                SchedulerService.upsert_job(assistant)
+                
+                # 3. Extract accounts from credentials
+                if assistant.credentials and assistant.credentials.social_accounts:
+                    for acc in assistant.credentials.social_accounts:
+                        key = f"{acc.get('platform')}_{acc.get('page_id') or acc.get('id')}"
+                        all_social_accounts[key] = acc
+
+            # 1.5 Process Top-Level Accounts (if any)
+            if payload.social_accounts:
+                for acc in payload.social_accounts:
                     key = f"{acc.get('platform')}_{acc.get('page_id') or acc.get('id')}"
                     all_social_accounts[key] = acc
 
-        # 1.5 Process Top-Level Accounts (if any)
-        if payload.social_accounts:
-            for acc in payload.social_accounts:
-                key = f"{acc.get('platform')}_{acc.get('page_id') or acc.get('id')}"
-                all_social_accounts[key] = acc
-
-        # 2. Upsert Social Accounts into DB
-        for key, acc_data in all_social_accounts.items():
-            acc_id = str(acc_data.get('id'))
-            page_id = str(acc_data.get('page_id')) if acc_data.get('page_id') else None
-            
-            # Try to find existing by ID or page_id
-            statement = select(SocialMediaAccount).where(
-                (SocialMediaAccount.id == acc_id) | 
-                (SocialMediaAccount.page_id == page_id)
-            )
-            results = await session.execute(statement)
-            existing = results.scalars().first()
-            
-            if existing:
-                # Update
-                existing.account_name = acc_data.get('name', existing.account_name)
-                existing.access_token = acc_data.get('access_token', existing.access_token)
-                existing.handle = acc_data.get('handle', existing.handle)
-                existing.refresh_token = acc_data.get('refresh_token', existing.refresh_token)
-                existing.client_id = acc_data.get('client_id', existing.client_id)
-                existing.client_secret = acc_data.get('client_secret', existing.client_secret)
-                session.add(existing)
-            else:
-                # Create New
-                new_acc = SocialMediaAccount(
-                    id=acc_id,
-                    platform=acc_data.get('platform'),
-                    account_name=acc_data.get('name'),
-                    handle=acc_data.get('handle') or acc_data.get('name'),
-                    access_token=acc_data.get('access_token'),
-                    page_id=page_id,
-                    refresh_token=acc_data.get('refresh_token'),
-                    client_id=acc_data.get('client_id'),
-                    client_secret=acc_data.get('client_secret')
+            # 2. Upsert Social Accounts into DB
+            for key, acc_data in all_social_accounts.items():
+                acc_id = str(acc_data.get('id'))
+                page_id = str(acc_data.get('page_id')) if acc_data.get('page_id') else None
+                
+                # Try to find existing by ID or page_id
+                statement = select(SocialMediaAccount).where(
+                    (SocialMediaAccount.id == acc_id) | 
+                    (SocialMediaAccount.page_id == page_id)
                 )
-                session.add(new_acc)
-        
-        await session.commit()
-        return {"status": "success", "synced_count": len(payload.assistants)}
+                results = await session.execute(statement)
+                existing = results.scalars().first()
+                
+                if existing:
+                    # Update
+                    existing.account_name = acc_data.get('name', existing.account_name)
+                    existing.access_token = acc_data.get('access_token', existing.access_token)
+                    existing.handle = acc_data.get('handle', existing.handle)
+                    existing.refresh_token = acc_data.get('refresh_token', existing.refresh_token)
+                    existing.client_id = acc_data.get('client_id', existing.client_id)
+                    existing.client_secret = acc_data.get('client_secret', existing.client_secret)
+                    session.add(existing)
+                else:
+                    # Create New
+                    new_acc = SocialMediaAccount(
+                        id=acc_id,
+                        platform=acc_data.get('platform'),
+                        account_name=acc_data.get('name'),
+                        handle=acc_data.get('handle') or acc_data.get('name'),
+                        access_token=acc_data.get('access_token'),
+                        page_id=page_id,
+                        refresh_token=acc_data.get('refresh_token'),
+                        client_id=acc_data.get('client_id'),
+                        client_secret=acc_data.get('client_secret')
+                    )
+                    session.add(new_acc)
+            
+            await session.commit()
+            return {"status": "success", "synced_count": len(payload.assistants)}
 
-    except Exception as e:
-        LoggerService.error(f"Sync Failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except OperationalError as e:
+            last_err = e
+            if "database is locked" in str(e).lower():
+                print(f"⚠️ [Sync] Database locked, retrying ({attempt + 1}/{max_retries})...")
+                await asyncio.sleep(retry_delay)
+                continue
+            raise e
+        except Exception as e:
+            LoggerService.error(f"Sync Failed: {str(e)}")
+            raise e
+            
+    raise last_err
 
 async def _persist_assistant_to_db(assistant: SyncAssistant, session: AsyncSession):
     """
@@ -199,76 +213,93 @@ async def upsert_assistant(payload: SyncRequest, session: AsyncSession = Depends
     Atomic Upsert: Syncs a SINGLE assistant and its dependencies.
     Does NOT prune other jobs.
     """
-    try:
-        if not payload.assistants or len(payload.assistants) != 1:
-            raise HTTPException(status_code=400, detail="Atomic sync requires exactly one assistant.")
+    import asyncio
+    from sqlalchemy.exc import OperationalError
+    
+    max_retries = 3
+    retry_delay = 0.5
+    last_err = None
+    
+    for attempt in range(max_retries):
+        try:
+            if not payload.assistants or len(payload.assistants) != 1:
+                raise HTTPException(status_code=400, detail="Atomic sync requires exactly one assistant.")
 
-        assistant = payload.assistants[0]
-        LoggerService.info(f"⚡ Atomic Sync: {assistant.name} ({assistant.id})")
+            assistant = payload.assistants[0]
+            LoggerService.info(f"⚡ Atomic Sync: {assistant.name} ({assistant.id})")
 
-        # 1. DB Persistence (Crucial for parity)
-        await _persist_assistant_to_db(assistant, session)
+            # 1. DB Persistence (Crucial for parity)
+            await _persist_assistant_to_db(assistant, session)
 
-        # 2. Sync AppSettings (AI Configs) - append/update only provided ones
-        if payload.ai_configs:
-             settings = (await session.execute(select(AppSettings))).scalars().first()
-             if not settings:
-                 settings = AppSettings(id=1, ai_configs=[])
+            # 2. Sync AppSettings (AI Configs) - append/update only provided ones
+            if payload.ai_configs:
+                 settings = (await session.execute(select(AppSettings))).scalars().first()
+                 if not settings:
+                     settings = AppSettings(id=1, ai_configs=[])
+                     session.add(settings)
+                 
+                 # Merge/Update provided configs
+                 current_configs = {c['id']: c for c in (settings.ai_configs or [])}
+                 for new_cfg in payload.ai_configs:
+                     current_configs[new_cfg['id']] = new_cfg
+                 
+                 settings.ai_configs = list(current_configs.values())
                  session.add(settings)
-             
-             # Merge/Update provided configs
-             current_configs = {c['id']: c for c in (settings.ai_configs or [])}
-             for new_cfg in payload.ai_configs:
-                 current_configs[new_cfg['id']] = new_cfg
-             
-             settings.ai_configs = list(current_configs.values())
-             session.add(settings)
 
-        # 3. Upsert Job (Scheduler)
-        SchedulerService.upsert_job(assistant)
+            # 3. Upsert Job (Scheduler)
+            SchedulerService.upsert_job(assistant)
 
-        # 4. Sync Accounts (Atomic)
-        if assistant.credentials and assistant.credentials.social_accounts:
-            for acc_data in assistant.credentials.social_accounts:
-                # Reuse existing logic for account upsert (refactor if needed, but inline is safe for now)
-                acc_id = str(acc_data.get('id'))
-                page_id = str(acc_data.get('page_id')) if acc_data.get('page_id') else None
-                
-                statement = select(SocialMediaAccount).where(
-                    (SocialMediaAccount.id == acc_id) | 
-                    (SocialMediaAccount.page_id == page_id)
-                )
-                results = await session.execute(statement)
-                existing = results.scalars().first()
-                
-                if existing:
-                    existing.account_name = acc_data.get('name', existing.account_name)
-                    existing.access_token = acc_data.get('access_token', existing.access_token)
-                    existing.handle = acc_data.get('handle', existing.handle)
-                    existing.refresh_token = acc_data.get('refresh_token', existing.refresh_token)
-                    existing.client_id = acc_data.get('client_id', existing.client_id)
-                    existing.client_secret = acc_data.get('client_secret', existing.client_secret)
-                    session.add(existing)
-                else:
-                    new_acc = SocialMediaAccount(
-                        id=acc_id,
-                        platform=acc_data.get('platform'),
-                        account_name=acc_data.get('name'),
-                        handle=acc_data.get('handle') or acc_data.get('name'),
-                        access_token=acc_data.get('access_token'),
-                        page_id=page_id,
-                        refresh_token=acc_data.get('refresh_token'),
-                        client_id=acc_data.get('client_id'),
-                        client_secret=acc_data.get('client_secret')
+            # 4. Sync Accounts (Atomic)
+            if assistant.credentials and assistant.credentials.social_accounts:
+                for acc_data in assistant.credentials.social_accounts:
+                    # Reuse existing logic for account upsert (refactor if needed, but inline is safe for now)
+                    acc_id = str(acc_data.get('id'))
+                    page_id = str(acc_data.get('page_id')) if acc_data.get('page_id') else None
+                    
+                    statement = select(SocialMediaAccount).where(
+                        (SocialMediaAccount.id == acc_id) | 
+                        (SocialMediaAccount.page_id == page_id)
                     )
-                    session.add(new_acc)
+                    results = await session.execute(statement)
+                    existing = results.scalars().first()
+                    
+                    if existing:
+                        existing.account_name = acc_data.get('name', existing.account_name)
+                        existing.access_token = acc_data.get('access_token', existing.access_token)
+                        existing.handle = acc_data.get('handle', existing.handle)
+                        existing.refresh_token = acc_data.get('refresh_token', existing.refresh_token)
+                        existing.client_id = acc_data.get('client_id', existing.client_id)
+                        existing.client_secret = acc_data.get('client_secret', existing.client_secret)
+                        session.add(existing)
+                    else:
+                        new_acc = SocialMediaAccount(
+                            id=acc_id,
+                            platform=acc_data.get('platform'),
+                            account_name=acc_data.get('name'),
+                            handle=acc_data.get('handle') or acc_data.get('name'),
+                            access_token=acc_data.get('access_token'),
+                            page_id=page_id,
+                            refresh_token=acc_data.get('refresh_token'),
+                            client_id=acc_data.get('client_id'),
+                            client_secret=acc_data.get('client_secret')
+                        )
+                        session.add(new_acc)
 
-        await session.commit()
-        return {"status": "success", "id": assistant.id, "action": "upsert"}
+            await session.commit()
+            return {"status": "success", "id": assistant.id, "action": "upsert"}
 
-    except Exception as e:
-        LoggerService.error(f"Atomic Sync Failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except OperationalError as e:
+            last_err = e
+            if "database is locked" in str(e).lower():
+                print(f"⚠️ [Atomic Sync] Database locked, retrying ({attempt + 1}/{max_retries})...")
+                await asyncio.sleep(retry_delay)
+                continue
+            raise e
+        except Exception as e:
+            LoggerService.error(f"Atomic Sync Failed: {str(e)}")
+            raise e
+            
+    raise last_err
 
 @router.get("/status/{assistant_id}")
 async def get_status(assistant_id: str):

@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+import json
 from datetime import datetime, timedelta
 from sqlmodel import select
 from models import FlowConfig, Job, JobType, JobStatus, GeneratedPost, AppSettings, SocialPlatform, SocialMediaAccount
@@ -31,7 +32,10 @@ class AssistantService:
             # Update last run
             flow.last_run_at = datetime.utcnow()
             session.add(flow)
-            cls.log(job, "✅ Execution cycle completed successfully.")
+            if flow.source_type == "VIDEO_AUTOMATION":
+                cls.log(job, "✅ Video Flow Initialized: Topic/Script generated and Rendering job queued.")
+            else:
+                cls.log(job, "✅ Execution cycle completed successfully.")
             
             # 1:1 Parity Notification
             await NotificationService.send_success(session, flow.name, "Automation cycle completed successfully. 🚀")
@@ -162,47 +166,89 @@ class AssistantService:
 
     @classmethod
     async def process_video_flow(cls, session, flow: FlowConfig, job: Job = None):
-        """Mirroring mobile's handleVideoAutomationFlow"""
+        """Mirroring mobile's handleVideoAutomationFlow with dynamic concepts"""
         cfg = flow.video_automation_config
         if not cfg: 
             cls.log(job, "⚠️ Missing video config. Skipping.")
             return
         
-        module = cfg.get("videoModule", "story-reel")
-        niche = cfg.get("videoNiche", "General")
+        module = cfg.get("module", "story-reel")
+        niche = cfg.get("niche", "General")
+        niche_details = cfg.get("nicheDetails", "")
         cls.log(job, f"🎬 Starting Video Flow: {module} ({niche})...")
         
-        # 1. Generate Script
-        cls.log(job, "Generating video script...")
-        script_prompt = f"TOPIC: {niche}\nDETAIL: {cfg.get('videoNicheDetails')}\nTASK: Generate video script."
-        script = await cls.apply_ai_rewrite(flow, session, script_prompt)
-        
-        # 2. Call NCAKit
+        # 0. AI Config Resolution
         app_settings = (await session.execute(select(AppSettings))).scalars().first()
-        if not app_settings.nca_api_url: raise Exception("NCA API URL not configured")
+        ai_config_id = flow.ai_config_id
+        ai_cfg = next((c for c in app_settings.ai_configs if c["id"] == ai_config_id), None)
+        if not ai_cfg:
+            ai_cfg = {"provider": "Gemini", "apiKey": app_settings.gemini_api_key, "model": "gemini-2.0-flash"}
         
+        from services.video_ai import VideoAiService
+        
+        # 1. Generate Topic (Concept)
+        cls.log(job, "🧠 Generating viral topic...")
+        topic_template = cfg.get("topicSystemPrompt") # Matches FlowBuilderScreen.tsx
+        topic = await VideoAiService.generate_concept(ai_cfg, niche, niche_details, topic_template)
+        cls.log(job, f"Topic Generated: {topic}")
+
+        # 2. Generate Script/Content based on Module
+        cls.log(job, f"📝 Generating {module} content...")
+        custom_prompt = cfg.get("scriptSystemPrompt") # Matches FlowBuilderScreen.tsx
+        
+        result_data = None
+        if module == "story-reel":
+            style = cfg.get("style", "Cinematic")
+            result_data = await VideoAiService.generate_story_reel_content(ai_cfg, topic, style, niche, niche_details, custom_prompt)
+            script = result_data.get("script", "")
+        elif module == "short-video":
+            result_data = await VideoAiService.generate_short_video_content(ai_cfg, topic, niche, niche_details, custom_prompt)
+            script = json.dumps(result_data) # Logged for history
+        elif module == "fact-image":
+            result_data = await VideoAiService.generate_fact_image_content(ai_cfg, topic, niche, niche_details, custom_prompt)
+            script = result_data.get("fact_text", "")
+        elif module == "quiz":
+            count = cfg.get("quizCount", 5)
+            result_data = await VideoAiService.generate_quiz_content(ai_cfg, topic, count, niche, niche_details, custom_prompt)
+            script = json.dumps(result_data)
+        
+        if not result_data:
+            raise Exception(f"Failed to generate content for {module}")
+
+        # 3. Call NCAKit
+        if not app_settings.nca_api_url: raise Exception("NCA API URL not configured")
         nca = NcaKitService(app_settings.nca_api_url)
         
-        cls.log(job, f"Requesting {module} from NCAKit...")
+        cls.log(job, f"🚀 Sending to NCAKit ({module})...")
+        result = None
         if module == "story-reel":
-            result = await nca.create_story_reel(script, cfg.get("videoStyle", "semi-realistic"), cfg.get("videoVoice", "af_heart"))
+            result = await nca.create_story_reel(result_data.get("script", ""), cfg.get("style", "semi-realistic"), cfg.get("voice", "af_heart"))
+        elif module == "short-video":
+            nca_cfg = {
+                "voice": cfg.get("voice", "af_heart"),
+                "music": cfg.get("music", "chill"),
+                "style": cfg.get("style", "semi-realistic")
+            }
+            result = await nca.create_short_video(result_data.get("scenes", []), nca_cfg)
         elif module == "fact-image":
-            # Support dynamic image provider for fact-image
-            img_provider = "nvidia" # Default
+            img_provider = "nvidia" 
             img_config_id = flow.image_gen_config_id
-            
             if img_config_id:
-                # If it's a known provider name (legacy/simple selection)
                 if img_config_id in ["nvidia", "cloudflare", "pexels"]:
                     img_provider = img_config_id
                 else:
-                    # Look up from configs
-                    ai_cfg = next((c for c in app_settings.image_gen_configs if c["id"] == img_config_id), None)
-                    if ai_cfg:
-                        img_provider = ai_cfg.get("provider", "nvidia").lower()
+                    ai_config_lookup = next((c for c in app_settings.image_gen_configs if c["id"] == img_config_id), None)
+                    if ai_config_lookup:
+                        img_provider = ai_config_lookup.get("provider", "nvidia").lower()
             
-            cls.log(job, f"Requesting {module} with image provider: {img_provider}...")
-            result = await nca.create_fact_image(img_provider, script, "Fact Text", "Heading")
+            result = await nca.create_fact_image(
+                img_provider, 
+                result_data.get("image_prompt", ""), 
+                result_data.get("fact_text", ""), 
+                result_data.get("fact_heading", "DID YOU KNOW?")
+            )
+        elif module == "quiz":
+            result = await nca.create_quiz_reel(result_data.get("quizzes", []), cfg.get("voice", "af_heart"))
         
         if result and "job_id" in result:
              job_id = result["job_id"]
@@ -232,11 +278,11 @@ class AssistantService:
                 model = ai_cfg.get("model", model)
         
         if provider == "Gemini":
-            return ContentService.generate_with_gemini(api_key, text, model)
+            return await ContentService.generate_with_gemini(api_key, text, model)
         elif provider == "Groq":
-            return ContentService.generate_with_groq(api_key, text, model)
+            return await ContentService.generate_with_groq(api_key, text, model)
         elif provider == "OpenRouter":
-            return ContentService.generate_with_openrouter(api_key, text, model)
+            return await ContentService.generate_with_openrouter(api_key, text, model)
             
         return text
 
@@ -270,7 +316,15 @@ class AssistantService:
         
         target_ids = flow.target_page_ids or []
         for tid in target_ids:
-            account = (await session.execute(select(SocialMediaAccount).where(SocialMediaAccount.id == tid))).scalars().first()
+            # Find Account (Robust lookup by internal ID or Page ID)
+            from sqlalchemy import or_
+            stmt = select(SocialMediaAccount).where(
+                or_(
+                    SocialMediaAccount.id == tid,
+                    SocialMediaAccount.page_id == str(tid)
+                )
+            )
+            account = (await session.execute(stmt)).scalars().first()
             
             if not account:
                 AssistantService.log(job, f"⚠️ Warning: Target Account ID {tid} not found. Skipping.")

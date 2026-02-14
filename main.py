@@ -30,9 +30,10 @@ app = FastAPI(
 )
 
 # CORS (Allow frontend access)
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for local dev (React Native)
+    allow_origins=allowed_origins, # Allow configured origins or all for local
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

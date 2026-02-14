@@ -1,11 +1,34 @@
-from google.genai import Client
-from openai import OpenAI
 import os
 import uuid
+import asyncio
+import functools
+from typing import Callable, Any
+
+def retry_with_backoff(retries: int = 3, backoff_in_seconds: int = 1):
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):            
+            x = 0
+            while True:
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    # Retry on 429 (Rate Limit) or 500+ (Server Error)
+                    error_msg = str(e).lower()
+                    if x == retries or not any(s in error_msg for s in ["429", "500", "timeout", "rate limit", "overloaded"]):
+                        raise
+                    
+                    sleep = (backoff_in_seconds * (2 ** x))
+                    print(f"⚠️ AI Service Attempt {x+1} failed: {e}. Retrying in {sleep}s...")
+                    await asyncio.sleep(sleep)
+                    x += 1
+        return wrapper
+    return decorator
 
 class ContentService:
     
     @staticmethod
+    @retry_with_backoff(retries=3)
     async def generate_with_gemini(api_key: str, prompt: str, model: str = 'gemini-2.0-flash') -> str:
         import httpx
         if not api_key:
@@ -33,6 +56,7 @@ class ContentService:
                 raise Exception(f"Gemini API Failed: {str(e)}")
 
     @staticmethod
+    @retry_with_backoff(retries=3)
     async def generate_with_openrouter(api_key: str, prompt: str, model: str = 'openrouter/auto', base_url: str = None) -> str:
         from openai import AsyncOpenAI
         if not api_key:
@@ -54,6 +78,7 @@ class ContentService:
             raise Exception(f"OpenRouter API Failed: {str(e)}")
 
     @staticmethod
+    @retry_with_backoff(retries=3)
     async def generate_with_groq(api_key: str, prompt: str, model: str = 'llama-3.3-70b-versatile', base_url: str = None) -> str:
         from openai import AsyncOpenAI
         if not api_key:

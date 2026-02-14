@@ -1,0 +1,202 @@
+import os
+import shutil
+import asyncio
+import json
+from datetime import datetime
+from sqlmodel import select
+from database import async_session
+from models import Job, JobStatus, JobType, FlowConfig, SocialMediaAccount, GeneratedPost
+from services.assistant_service import AssistantService
+from services.facebook import FacebookService
+from services.logger_service import LoggerService
+
+class ExecutionPipeline:
+    @classmethod
+    async def process_pending_jobs(cls):
+        """Orchestrator called by Scheduler to process the DB-based job queue"""
+        async with async_session() as session:
+            now = datetime.utcnow()
+            stmt = select(Job).where(
+                Job.status == JobStatus.PENDING,
+                Job.scheduled_at <= now
+            ).order_by(Job.scheduled_at.asc())
+            
+            result = await session.execute(stmt)
+            jobs = result.scalars().all()
+            
+            if not jobs:
+                return
+
+            print(f"⚙️ [ExecutionPipeline] Processing {len(jobs)} pending jobs...")
+            
+            for job in jobs:
+                try:
+                    job.status = JobStatus.PROCESSING
+                    job.attempts += 1
+                    session.add(job)
+                    await session.commit()
+                    
+                    await cls.run_job(session, job)
+                    
+                    job.status = JobStatus.SUCCESS
+                except Exception as e:
+                    import traceback
+                    error_msg = f"{str(e)}\n{traceback.format_exc()}"
+                    print(f"❌ [ExecutionPipeline] Job {job.id} failed: {error_msg}")
+                    job.status = JobStatus.FAILED
+                    job.error = str(e)
+                finally:
+                    session.add(job)
+                    await session.commit()
+
+    @classmethod
+    async def run_job(cls, session, job: Job):
+        """Routing logic for different job types"""
+        payload = job.payload
+        
+        if job.type == JobType.FLOW_EXECUTION:
+            flow_id = payload.get("flowId")
+            flow = await session.get(FlowConfig, flow_id)
+            if flow:
+                await AssistantService.execute_flow(session, flow, job)
+            else:
+                raise Exception(f"Flow {flow_id} not found")
+                
+        elif job.type == JobType.FB_PUBLISH:
+            await cls.handle_social_publish(job, "FACEBOOK")
+            
+        elif job.type == JobType.RSS_FETCH:
+            # RSS fetching is usually handled by AssistantService or its own service
+            from services.rss import RSSService
+            feed_id = payload.get("feedId")
+            url = payload.get("url")
+            if url:
+                RSSService.fetch_feed(url) # This might need to be async or handled differently
+                
+        elif job.type == JobType.VIDEO_CHECK_STATUS:
+             # Handle polling NCAKit status
+             from services.ncakit import NcaKitService
+             from models import AppSettings
+             settings = (await session.execute(select(AppSettings))).scalars().first()
+             nca = NcaKitService(settings.nca_api_url)
+             
+             video_job_id = payload.get("video_job_id")
+             module = payload.get("module")
+             flow_id = payload.get("flow_id")
+             
+             status_res = await nca.get_status(video_job_id, module)
+             if status_res.get("status") == "ready":
+                 video_url = status_res.get("download_url") or status_res.get("video_url")
+                 # Proceed to publish
+                 flow = await session.get(FlowConfig, flow_id)
+                 await AssistantService.queue_post(session, flow, "Video is ready!", "NCAKIT", video_url=video_url, job=job)
+             elif status_res.get("status") == "failed":
+                 raise Exception(f"NCA Video Build Failed: {status_res.get('error')}")
+             else:
+                 # Re-queue status check
+                 from datetime import timedelta
+                 job.status = JobStatus.PENDING
+                 job.scheduled_at = datetime.utcnow() + timedelta(minutes=2)
+                 cls.log(job, f"Video still processing ({status_res.get('progress', 0)}%). Re-queued.")
+
+    @classmethod
+    async def handle_social_publish(cls, job: Job, platform: str):
+        payload = job.payload
+        account_id = payload.get("accountId")
+        content = payload.get("content")
+        image_uri = payload.get("imageUri")
+        video_url = payload.get("videoUrl")
+        
+        async with async_session() as session:
+            account = await session.get(SocialMediaAccount, account_id)
+            if not account: raise Exception(f"Account {account_id} not found")
+            
+            if platform == "FACEBOOK":
+                if video_url:
+                    await FacebookService.upload_video(account.page_id, account.access_token, video_url, "Automated Post", content)
+                elif image_uri:
+                    await FacebookService.upload_photo(account.page_id, account.access_token, image_uri, content)
+                else:
+                    await FacebookService.publish_text(account.page_id, account.access_token, content)
+
+    @classmethod
+    async def execute_flow(cls, flow_config_dict: dict):
+        """Called by scheduler's execute_wrapper"""
+        async with async_session() as session:
+            flow_id = flow_config_dict.get("id")
+            flow = await session.get(FlowConfig, flow_id)
+            if not flow:
+                raise Exception(f"Flow {flow_id} not found during execution")
+            
+            # Create a virtual job for logging if not provided
+            job = Job(type=JobType.FLOW_EXECUTION, payload={"flowId": flow.id}, scheduled_at=datetime.utcnow())
+            session.add(job)
+            await session.commit()
+            
+            await AssistantService.execute_flow(session, flow, job)
+
+    @classmethod
+    async def execute_manual_publish(cls, payload: dict):
+        """Handles immediate manual publishing from API"""
+        results = []
+        accounts_data = payload.get("accounts_data", [])
+        caption = payload.get("caption", "")
+        file_path = payload.get("file_path")
+        
+        for acc in accounts_data:
+            platform = acc.get("platform")
+            try:
+                res = None
+                if platform == "FACEBOOK":
+                    if file_path:
+                        # Detect if video or image
+                        is_video = file_path.lower().endswith(('.mp4', '.mov', '.avi'))
+                        if is_video:
+                            res = await FacebookService.upload_video(acc['page_id'], acc['access_token'], file_path, "Manual Upload", caption)
+                        else:
+                            res = await FacebookService.upload_photo(acc['page_id'], acc['access_token'], file_path, caption)
+                    else:
+                        res = await FacebookService.publish_text(acc['page_id'], acc['access_token'], caption)
+                
+                results.append({"account": acc['account_name'], "status": "success", "data": res, "error": None})
+            except Exception as e:
+                results.append({"account": acc['account_name'], "status": "failed", "data": None, "error": str(e)})
+                
+        return results
+
+    @classmethod
+    async def create_manual_job(cls, payload: dict, is_queue: bool):
+        """Queues a manual job in the DB"""
+        async with async_session() as session:
+            job = Job(
+                type=JobType.FLOW_EXECUTION, # Or a specialized MANUAL_PUBLISH type
+                payload=payload,
+                scheduled_at=datetime.utcnow(),
+                status=JobStatus.PENDING
+            )
+            session.add(job)
+            await session.commit()
+
+    @classmethod
+    def cleanup_stale_uploads(cls):
+        """Cleanup logic for local storage"""
+        upload_dir = "static/uploads"
+        if not os.path.exists(upload_dir):
+            return
+            
+        now = datetime.now().timestamp()
+        for f in os.listdir(upload_dir):
+            path = os.path.join(upload_dir, f)
+            # Delete files older than 24 hours
+            if os.stat(path).st_mtime < now - 86400:
+                if os.path.isfile(path):
+                    os.remove(path)
+                elif os.path.isdir(path):
+                    shutil.rmtree(path)
+
+    @staticmethod
+    def log(job: Job, message: str):
+        print(f"[{job.id if job else 'SYSTEM'}] {message}")
+        if job:
+            timestamp = datetime.utcnow().strftime("%H:%M:%S")
+            job.execution_logs = job.execution_logs + [f"[{timestamp}] {message}"]

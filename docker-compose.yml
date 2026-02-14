@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: nexus_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./nexus_v2.db:/app/nexus_v2.db
+      - ./nexus_v2.db-shm:/app/nexus_v2.db-shm
+      - ./nexus_v2.db-wal:/app/nexus_v2.db-wal
+      - ./jobs.sqlite:/app/jobs.sqlite
+      - ./scheduler.lock:/app/scheduler.lock
+    environment:
+      - PORT=8000
+      - DATABASE_URL=sqlite:///nexus_v2.db
+      - JOBS_DB_URL=sqlite:///jobs.sqlite
+      - ALLOWED_ORIGINS=*

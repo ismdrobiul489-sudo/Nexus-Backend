@@ -155,6 +155,8 @@ frontend/
 *.sqlite
 *.sqlite3
 *.sqlite-journal
+*.db-shm
+*.db-wal
 *.lock
 app.db
 database.db

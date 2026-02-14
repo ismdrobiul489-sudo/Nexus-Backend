@@ -15,6 +15,6 @@ services:
       - ./scheduler.lock:/app/scheduler.lock
     environment:
       - PORT=8000
-      - DATABASE_URL=sqlite:///nexus_v2.db
-      - JOBS_DB_URL=sqlite:///jobs.sqlite
+      - DATABASE_URL=sqlite+aiosqlite:///nexus_v2.db
+      - JOBS_DB_URL=sqlite+aiosqlite:///jobs.sqlite
       - ALLOWED_ORIGINS=*
